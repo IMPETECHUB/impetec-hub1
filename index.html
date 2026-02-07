@@ -36,7 +36,8 @@
         <div class="text-3xl font-black text-blue-900 mb-8 italic uppercase tracking-tighter">Impetec <span class="text-blue-500">Hub</span></div>
         <input type="text" id="u-in" placeholder="Operador" class="w-full border p-4 rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500 text-center uppercase font-bold">
         <input type="password" id="p-in" placeholder="Contraseña" class="w-full border p-4 rounded-xl mb-8 outline-none focus:ring-2 ring-blue-500 text-center">
-        <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold hover:bg-blue-800 uppercase tracking-widest">Entrar</button>
+        <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold hover:bg-blue-800 uppercase tracking-widest mb-4">Entrar</button>
+        <button onclick="register()" class="w-full text-blue-600 text-[10px] font-bold uppercase tracking-widest hover:underline">Registrar Nuevo Operador</button>
     </div>
 </div>
 
@@ -166,10 +167,26 @@
 
     function login() {
         const u = document.getElementById('u-in').value.toLowerCase().trim(), p = document.getElementById('p-in').value;
+        if(!u || !p) return alert("Completa los campos");
         db.ref(`users/${u}`).once('value', s => { 
             if(s.exists() && s.val().pass === p) { me = u; localStorage.setItem('imp_user', u); location.reload(); }
+            else alert("Credenciales incorrectas");
         });
     }
+
+    function register() {
+        const u = document.getElementById('u-in').value.toLowerCase().trim(), p = document.getElementById('p-in').value;
+        if(u.length < 3 || p.length < 3) return alert("Usuario y contraseña deben tener al menos 3 caracteres");
+        db.ref(`users/${u}`).once('value', s => {
+            if(s.exists()) alert("Este usuario ya existe");
+            else {
+                db.ref(`users/${u}`).set({ pass: p }).then(() => {
+                    alert("Operador registrado con éxito. Ya puedes entrar.");
+                });
+            }
+        });
+    }
+
     if(me) document.getElementById('auth-wall').classList.add('hidden');
 
     function tab(t) {
@@ -180,7 +197,6 @@
         if(t === 'cal') renderCal();
     }
 
-    // --- PIPELINE LOGIC RESTORED ---
     function openDeal(id = null) {
         const d = id ? deals.find(x => x.id === id) : null;
         document.getElementById('f-id').value = id || '';
@@ -214,7 +230,6 @@
         const ref = db.ref(`deals/${curM}-${curY}`);
         ref.limitToLast(1).on('child_changed', () => { if(!firstLoad) playSound('snd-pipeline'); });
         ref.limitToLast(1).on('child_added', () => { if(!firstLoad) playSound('snd-pipeline'); });
-
         ref.on('value', snap => {
             deals = snap.val() ? Object.values(snap.val()) : [];
             ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => {
@@ -239,7 +254,6 @@
     function allow(e) { e.preventDefault(); }
     function deleteDeal() { if(confirm('¿Eliminar?')) db.ref(`deals/${curM}-${curY}/${document.getElementById('f-id').value}`).remove().then(()=>document.getElementById('m-deal').classList.add('hidden')); }
 
-    // --- AGENDA LOGIC RESTORED ---
     function renderCal() {
         const grid = document.getElementById('cal-render'); grid.innerHTML = '';
         const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -248,11 +262,7 @@
         const offset = firstDay === 0 ? 6 : firstDay - 1;
         const dInM = new Date(curY, parseInt(curM)+1, 0).getDate();
         for(let i=0; i<offset; i++) grid.innerHTML += `<div class="bg-slate-50/50"></div>`;
-        
         const ref = db.ref(`agenda/${curM}-${curY}`);
-        ref.on('child_changed', () => { if(!firstLoad) playSound('snd-agenda'); });
-        ref.on('child_added', () => { if(!firstLoad) playSound('snd-agenda'); });
-
         ref.on('value', snap => {
             const evs = snap.val() || {};
             grid.querySelectorAll('.cal-day').forEach(el => el.remove());
@@ -281,14 +291,13 @@
     function saveEvent() {
         const id = document.getElementById('ev-id').value;
         const data = { txt: document.getElementById('ev-txt').value, time: document.getElementById('ev-time').value, user: me };
-        const path = `agenda/${curM}-${curY}/d${selD}`;
-        if(id) db.ref(`${path}/${id}`).update(data);
-        else db.ref(path).push(data);
+        if(id) db.ref(`agenda/${curM}-${curY}/d${selD}/${id}`).update(data);
+        else db.ref(`agenda/${curM}-${curY}/d${selD}`).push(data);
         document.getElementById('m-cal').classList.add('hidden');
+        playSound('snd-agenda');
     }
     function deleteEvent() { if(confirm('¿Borrar?')) db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove().then(()=>document.getElementById('m-cal').classList.add('hidden')); }
 
-    // --- OTHER CORE ---
     function sendMsg() {
         const i = document.getElementById('chat-in'); if(!i.value.trim()) return;
         db.ref('chat').push({ u: me, m: i.value, ts: Date.now() }); i.value = '';
