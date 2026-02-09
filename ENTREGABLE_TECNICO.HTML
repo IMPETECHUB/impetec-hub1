@@ -8,35 +8,32 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --blue-imp: #004691; }
-        @page { size: A4; margin: 10mm; }
+        @page { size: A4; margin: 0; }
         body { background: #f1f5f9; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
         
-        /* Contenedor de páginas */
         .document-page { 
             background: white; 
             width: 210mm; 
-            min-height: 290mm; 
+            min-height: 297mm; 
             margin: 10px auto; 
             padding: 15mm; 
             position: relative; 
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); 
         }
 
-        /* Salto de página para impresión */
-        .page-break { page-break-before: always; margin-top: 20mm; }
+        /* Forzado de nueva página */
+        .page-break { page-break-before: always; height: 1px; }
 
         .section-title { background: #f8fafc; color: #1e293b; padding: 6px 12px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--blue-imp); border-bottom: 1px solid #e2e8f0; }
-        input, textarea { border: none; background: transparent; padding: 2px; width: 100%; outline: none; transition: background 0.2s; font-family: inherit; }
-        input:hover, textarea:hover { background: #f1f5f9; }
+        input, textarea { border: none; background: transparent; padding: 2px; width: 100%; outline: none; transition: background 0.2s; }
+        input:hover { background: #f1f5f9; }
         
         .logo-upload-container { width: 250px; height: 80px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; }
         .logo-preview { max-width: 100%; max-height: 100%; object-fit: contain; }
         
-        /* Área de Inventario con Redimensionado */
         .inventory-box { position: relative; width: 100%; min-height: 200px; background: #fdfdfd; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .inventory-preview-img { width: 50%; height: auto; transition: width 0.2s ease; }
 
-        /* Fotos de Evidencia */
         .photo-box { position: relative; width: 100%; height: 220px; background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .photo-preview-img { width: 100%; height: 100%; object-fit: cover; }
         
@@ -46,21 +43,23 @@
         @media print {
             .no-print { display: none !important; }
             body { background: white; }
-            .document-page { margin: 0; box-shadow: none; width: 100%; padding: 0; }
-            .inventory-box { border: none !important; }
+            .document-page { margin: 0; box-shadow: none; width: 100%; padding: 10mm; }
         }
     </style>
 </head>
 <body onload="cargarDatosPersistentes()">
 
-    <div class="no-print bg-slate-900 p-4 sticky top-0 z-50 flex justify-center gap-4 shadow-2xl">
-        <button onclick="window.print()" class="bg-emerald-600 text-white px-6 py-2 rounded-full font-black text-xs uppercase hover:bg-emerald-500 transition-all">
-            <i class="fas fa-print mr-2"></i> Imprimir / Configurar Páginas
+    <div class="no-print bg-slate-900 p-4 sticky top-0 z-50 flex flex-wrap justify-center gap-3 shadow-2xl">
+        <button onclick="window.print()" class="bg-emerald-600 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase hover:bg-emerald-500">
+            <i class="fas fa-print mr-1"></i> Imprimir
         </button>
-        <button onclick="descargarPDF()" class="bg-blue-600 text-white px-6 py-2 rounded-full font-black text-xs uppercase hover:bg-blue-500 transition-all">
-            <i class="fas fa-file-pdf mr-2"></i> Descargar PDF Directo
+        <button onclick="descargarPDF()" class="bg-blue-600 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase hover:bg-blue-500">
+            <i class="fas fa-file-pdf mr-1"></i> PDF
         </button>
-        <button onclick="borrarFormulario()" class="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-xs uppercase hover:bg-red-500">
+        <button onclick="exportarHTML()" class="bg-purple-600 text-white px-5 py-2 rounded-full font-black text-[10px] uppercase hover:bg-purple-500" title="Guarda el archivo con el logo incluido para subirlo a GitHub">
+            <i class="fas fa-save mr-1"></i> Guardar HTML para GitHub
+        </button>
+        <button onclick="borrarFormulario()" class="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-[10px] uppercase hover:bg-red-500">
             <i class="fas fa-trash"></i>
         </button>
     </div>
@@ -85,95 +84,64 @@
 
         <div class="section-title">1. Información del Cliente</div>
         <div class="grid grid-cols-2 gap-4 mb-6 text-[11px]">
-            <div class="border-b border-slate-100 p-1">
-                <label class="text-[8px] text-slate-400 font-bold uppercase block">Nombre / Contacto</label>
-                <input type="text" placeholder="Escribir nombre..." class="font-bold uppercase w-full">
-            </div>
-            <div class="border-b border-slate-100 p-1">
-                <label class="text-[8px] text-slate-400 font-bold uppercase block">Empresa</label>
-                <input type="text" placeholder="Nombre de la empresa" class="font-bold uppercase w-full">
-            </div>
-            <div class="col-span-2 border-b border-slate-100 p-1">
-                <label class="text-[8px] text-slate-400 font-bold uppercase block">Ubicación de Instalación</label>
-                <input type="text" placeholder="Dirección completa" class="font-bold w-full">
-            </div>
+            <div class="border-b border-slate-100 p-1"><label class="text-[8px] text-slate-400 font-bold uppercase block">Nombre</label><input type="text" class="font-bold uppercase w-full"></div>
+            <div class="border-b border-slate-100 p-1"><label class="text-[8px] text-slate-400 font-bold uppercase block">Empresa</label><input type="text" class="font-bold uppercase w-full"></div>
+            <div class="col-span-2 border-b border-slate-100 p-1"><label class="text-[8px] text-slate-400 font-bold uppercase block">Ubicación</label><input type="text" class="font-bold w-full"></div>
         </div>
 
         <div class="section-title">2. Detalles del Personal</div>
         <div class="grid grid-cols-2 gap-4 mb-6 text-[11px]">
-            <div class="border-b border-slate-100 p-1">
-                <label class="text-[8px] text-slate-400 font-bold uppercase block">Técnico Responsable</label>
-                <input type="text" id="tecPersistente" placeholder="Nombre Técnico" onchange="guardarTextoPersistente()" class="font-black text-blue-800 uppercase w-full">
-            </div>
-            <div class="border-b border-slate-100 p-1">
-                <label class="text-[8px] text-slate-400 font-bold uppercase block">Vendedor</label>
-                <input type="text" id="vendPersistente" placeholder="Nombre Vendedor" onchange="guardarTextoPersistente()" class="font-bold uppercase w-full">
-            </div>
+            <div class="border-b border-slate-100 p-1"><label class="text-[8px] text-slate-400 font-bold uppercase block">Técnico</label><input type="text" id="tecPersistente" onchange="guardarTextoPersistente()" class="font-black text-blue-800 uppercase w-full"></div>
+            <div class="border-b border-slate-100 p-1"><label class="text-[8px] text-slate-400 font-bold uppercase block">Vendedor</label><input type="text" id="vendPersistente" onchange="guardarTextoPersistente()" class="font-bold uppercase w-full"></div>
         </div>
 
         <div class="section-title">3. Equipos Instalados y Garantía</div>
         <div class="no-print mb-2 flex items-center gap-4 bg-slate-100 p-2 rounded-lg">
-            <label class="text-[10px] font-bold text-slate-600 uppercase">Ajustar Tamaño de Imagen:</label>
-            <input type="range" min="20" max="100" value="50" class="w-48" oninput="ajustarTamano(this.value)">
-            <span id="valTamano" class="text-[10px] font-bold">50%</span>
+            <span class="text-[9px] font-bold text-slate-600 uppercase">Tamaño Imagen:</span>
+            <input type="range" min="10" max="100" value="50" class="w-32" oninput="ajustarTamano(this.value)">
         </div>
         
         <div class="inventory-box mb-8">
             <div id="invPlaceholder" class="text-center text-slate-400 p-10 cursor-pointer" onclick="document.getElementById('inventoryInput').click()">
                 <i class="fas fa-file-invoice text-4xl mb-2"></i>
-                <p class="text-[10px] font-bold uppercase tracking-widest">Click para subir captura o foto</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest">Subir Imagen de Equipos</p>
             </div>
             <input type="file" id="inventoryInput" class="hidden" accept="image/*" onchange="previewInventory(this)">
             <img id="invPreviewImg" class="inventory-preview-img hidden">
-            <div class="btn-overlay no-print" onclick="document.getElementById('inventoryInput').click()">Cambiar Imagen</div>
         </div>
 
         <div class="page-break"></div>
         
-        <div class="section-title">4. Evidencia Fotográfica de Obra</div>
+        <div class="section-title mt-8">4. Evidencia Fotográfica de Obra</div>
         <div class="grid grid-cols-2 gap-4 mb-10">
             <div class="photo-box cursor-pointer" onclick="this.querySelector('input').click()">
                 <input type="file" class="hidden" accept="image/*" onchange="previewImg(this)">
                 <i class="fas fa-camera text-slate-200 text-4xl"></i>
-                <div class="btn-overlay no-print">Cambiar</div>
             </div>
             <div class="photo-box cursor-pointer" onclick="this.querySelector('input').click()">
                 <input type="file" class="hidden" accept="image/*" onchange="previewImg(this)">
                 <i class="fas fa-camera text-slate-200 text-4xl"></i>
-                <div class="btn-overlay no-print">Cambiar</div>
             </div>
             <div class="photo-box cursor-pointer" onclick="this.querySelector('input').click()">
                 <input type="file" class="hidden" accept="image/*" onchange="previewImg(this)">
                 <i class="fas fa-camera text-slate-200 text-4xl"></i>
-                <div class="btn-overlay no-print">Cambiar</div>
             </div>
             <div class="photo-box cursor-pointer" onclick="this.querySelector('input').click()">
                 <input type="file" class="hidden" accept="image/*" onchange="previewImg(this)">
                 <i class="fas fa-camera text-slate-200 text-4xl"></i>
-                <div class="btn-overlay no-print">Cambiar</div>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-20 text-center mt-10 pb-12">
-            <div>
-                <div class="border-b-2 border-slate-800 mb-2"></div>
-                <input type="text" placeholder="Firma Técnico" class="text-center font-black uppercase text-[10px] w-full">
-            </div>
-            <div>
-                <div class="border-b-2 border-slate-800 mb-2"></div>
-                <input type="text" placeholder="Firma Cliente" class="text-center font-black italic text-[10px] w-full">
-            </div>
+        <div class="grid grid-cols-2 gap-20 text-center mt-20 pb-12">
+            <div><div class="border-b-2 border-slate-800 mb-2"></div><p class="font-black text-[10px] uppercase">Firma Técnico</p></div>
+            <div><div class="border-b-2 border-slate-800 mb-2"></div><p class="font-black text-[10px] uppercase">Firma Cliente</p></div>
         </div>
     </div>
 
     <script>
         document.getElementById('fechaAuto').valueAsDate = new Date();
 
-        function ajustarTamano(valor) {
-            const img = document.getElementById('invPreviewImg');
-            img.style.width = valor + '%';
-            document.getElementById('valTamano').innerText = valor + '%';
-        }
+        function ajustarTamano(v) { document.getElementById('invPreviewImg').style.width = v + '%'; }
 
         function previewLogo(input) {
             if (input.files && input.files[0]) {
@@ -187,8 +155,9 @@
         }
 
         function mostrarLogo(src) {
-            document.getElementById('logoPlaceholder').classList.add('hidden');
+            const placeholder = document.getElementById('logoPlaceholder');
             const img = document.getElementById('logoPreviewImg');
+            if(placeholder) placeholder.classList.add('hidden');
             img.src = src;
             img.classList.remove('hidden');
             document.getElementById('logoContainer').style.border = "none";
@@ -216,7 +185,7 @@
                     img.className = 'photo-preview-img';
                     img.src = e.target.result;
                     box.prepend(img);
-                    box.querySelector('.fa-camera').style.display = 'none';
+                    if(box.querySelector('.fa-camera')) box.querySelector('.fa-camera').style.display = 'none';
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -238,21 +207,33 @@
 
         function descargarPDF() {
             const element = document.getElementById('entregable-impetec');
-            const opt = {
-                margin: 5,
-                filename: 'Reporte_Tecnico.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save();
+            html2pdf().set({ margin: 0, filename: 'Entregable.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save();
         }
 
-        function borrarFormulario() {
-            if(confirm("¿Estás seguro de limpiar la información actual?")) {
-                location.reload();
+        // FUNCIÓN CLAVE PARA GITHUB
+        function exportarHTML() {
+            // Clonamos el documento para no afectar la vista actual
+            let clon = document.documentElement.cloneNode(true);
+            
+            // Si hay un logo en el preview, lo inyectamos directamente en el HTML
+            const logoSrc = document.getElementById('logoPreviewImg').src;
+            if (logoSrc && logoSrc.startsWith('data:image')) {
+                const logoImgInClon = clon.querySelector('#logoPreviewImg');
+                logoImgInClon.src = logoSrc;
+                logoImgInClon.classList.remove('hidden');
+                clon.querySelector('#logoPlaceholder').classList.add('hidden');
             }
+
+            const htmlContent = "<!DOCTYPE html>\n" + clon.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ENTREGABLE_TECNICO_FINAL.html';
+            a.click();
         }
+
+        function borrarFormulario() { if(confirm("¿Limpiar todo?")) location.reload(); }
     </script>
 </body>
 </html>
