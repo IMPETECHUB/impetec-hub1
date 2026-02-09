@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>IMPETEC HUB PRO - V24 TRACKING</title>
+    <title>IMPETEC HUB PRO - V26 AUTO-REGISTRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -31,9 +31,21 @@
 <div id="auth-wall" class="fixed inset-0 bg-slate-50 z-[9999] flex items-center justify-center">
     <div class="bg-white p-10 rounded-3xl shadow-xl w-96 text-center border">
         <div class="text-3xl font-black text-blue-900 mb-8 italic uppercase">Impetec <span class="text-blue-500">Hub</span></div>
-        <input type="text" id="u-in" placeholder="Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
-        <input type="password" id="p-in" placeholder="Contraseña" class="w-full border p-4 rounded-xl mb-8 text-center outline-none">
-        <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold uppercase tracking-widest">Entrar</button>
+        
+        <div id="login-form">
+            <input type="text" id="u-in" placeholder="Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
+            <input type="password" id="p-in" placeholder="Contraseña" class="w-full border p-4 rounded-xl mb-8 text-center outline-none">
+            <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold uppercase tracking-widest mb-4">Entrar</button>
+            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(true)">¿No tienes cuenta? Regístrate aquí</p>
+        </div>
+
+        <div id="reg-form" class="hidden">
+            <h3 class="text-sm font-black text-blue-600 mb-4 uppercase">Crear Nueva Cuenta</h3>
+            <input type="text" id="u-reg" placeholder="Nuevo Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
+            <input type="password" id="p-reg" placeholder="Elegir Contraseña" class="w-full border p-4 rounded-xl mb-6 text-center outline-none">
+            <button onclick="selfRegister()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold uppercase tracking-widest mb-4">Crear Cuenta</button>
+            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(false)">Volver al Login</p>
+        </div>
     </div>
 </div>
 
@@ -49,6 +61,7 @@
         <button onclick="tab('os')" class="nav-link" id="btn-os"><i class="fas fa-tools"></i> Orden Servicio</button>
         <button onclick="tab('rem')" class="nav-link" id="btn-rem"><i class="fas fa-file-invoice"></i> Remisiones</button>
         <button onclick="tab('edc')" class="nav-link" id="btn-edc"><i class="fas fa-wallet"></i> Edo. Cuenta</button>
+        <button id="admin-user-btn" onclick="openUserMgmt()" class="nav-link hidden text-orange-600 mt-4 border-t pt-4"><i class="fas fa-users-cog"></i> Gestión Usuarios</button>
     </nav>
     <div class="p-6 border-t">
         <select id="m-sel" onchange="initApp()" class="w-full text-xs font-bold text-blue-600 mb-4 outline-none"></select>
@@ -95,6 +108,39 @@
     <div id="v-edc" class="view-sec hidden"><iframe src="ESTADO DE CUENTA.html"></iframe></div>
 </main>
 
+<div id="m-users" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white p-8 rounded-3xl w-96 shadow-2xl">
+        <h3 class="font-bold mb-4 uppercase text-center text-blue-900">Usuarios Registrados</h3>
+        <div id="user-list-admin" class="mt-2 max-h-60 overflow-y-auto"></div>
+        <button onclick="document.getElementById('m-users').classList.add('hidden')" class="w-full mt-6 bg-slate-100 p-3 rounded-xl font-bold uppercase text-[10px]">Cerrar</button>
+    </div>
+</div>
+
+<div id="m-deal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white p-10 rounded-3xl w-96 shadow-2xl">
+        <input type="hidden" id="f-id"><input type="hidden" id="f-st">
+        <h3 class="font-bold mb-4 uppercase text-center text-blue-900">Datos de Negocio</h3>
+        <input type="text" id="f-cli" placeholder="CLIENTE" class="w-full border p-4 rounded-xl mb-4 font-bold uppercase outline-none">
+        <input type="number" id="f-mon" placeholder="MONTO $" class="w-full border p-4 rounded-xl mb-6 font-bold text-blue-600 outline-none">
+        <button onclick="saveDeal()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold uppercase">Guardar</button>
+        <button onclick="document.getElementById('m-deal').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-[10px] uppercase text-center">Cancelar</button>
+    </div>
+</div>
+
+<div id="m-cal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white p-8 rounded-3xl w-80 shadow-2xl text-center">
+        <input type="hidden" id="ev-id">
+        <h3 class="font-bold mb-4 uppercase text-blue-900">Actividad</h3>
+        <input type="time" id="ev-time" class="w-full border p-3 rounded-xl mb-4 text-center font-bold text-xl outline-none">
+        <textarea id="ev-txt" class="w-full border p-3 rounded-xl mb-6 h-24 text-sm outline-none" placeholder="Descripción..."></textarea>
+        <div class="flex gap-2">
+            <button onclick="saveEvent()" class="flex-1 bg-blue-600 text-white p-3 rounded-xl font-bold uppercase text-xs">Guardar</button>
+            <button onclick="deleteEvent()" id="btn-del-ev" class="bg-red-50 text-red-500 px-4 rounded-xl hidden"><i class="fas fa-trash"></i></button>
+        </div>
+        <button onclick="document.getElementById('m-cal').classList.add('hidden')" class="mt-4 text-slate-400 text-[10px] font-bold uppercase">Cerrar</button>
+    </div>
+</div>
+
 <div id="chat-ui" class="chat-float minimized">
     <div class="bg-blue-900 p-4 text-white flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('minimized')">
         <span class="text-[10px] font-bold uppercase tracking-widest">Mensajería Impetec</span>
@@ -125,31 +171,6 @@
     </div>
 </div>
 
-<div id="m-deal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-white p-10 rounded-3xl w-96 shadow-2xl">
-        <input type="hidden" id="f-id"><input type="hidden" id="f-st">
-        <h3 class="font-bold mb-4 uppercase text-center text-blue-900">Datos de Negocio</h3>
-        <input type="text" id="f-cli" placeholder="CLIENTE" class="w-full border p-4 rounded-xl mb-4 font-bold uppercase outline-none">
-        <input type="number" id="f-mon" placeholder="MONTO $" class="w-full border p-4 rounded-xl mb-6 font-bold text-blue-600 outline-none">
-        <button onclick="saveDeal()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold uppercase">Guardar</button>
-        <button onclick="document.getElementById('m-deal').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-[10px] uppercase text-center">Cancelar</button>
-    </div>
-</div>
-
-<div id="m-cal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-white p-8 rounded-3xl w-80 shadow-2xl text-center">
-        <input type="hidden" id="ev-id">
-        <h3 class="font-bold mb-4 uppercase text-blue-900">Actividad</h3>
-        <input type="time" id="ev-time" class="w-full border p-3 rounded-xl mb-4 text-center font-bold text-xl outline-none">
-        <textarea id="ev-txt" class="w-full border p-3 rounded-xl mb-6 h-24 text-sm outline-none" placeholder="Descripción..."></textarea>
-        <div class="flex gap-2">
-            <button onclick="saveEvent()" class="flex-1 bg-blue-600 text-white p-3 rounded-xl font-bold uppercase text-xs">Guardar</button>
-            <button onclick="deleteEvent()" id="btn-del-ev" class="bg-red-50 text-red-500 px-4 rounded-xl hidden"><i class="fas fa-trash"></i></button>
-        </div>
-        <button onclick="document.getElementById('m-cal').classList.add('hidden')" class="mt-4 text-slate-400 text-[10px] font-bold uppercase">Cerrar</button>
-    </div>
-</div>
-
 <script>
     const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
@@ -158,6 +179,26 @@
     let currentRoom = 'general', isPrivate = false, tempFileData = null;
 
     function playNotif() { document.getElementById('notif-snd').play().catch(()=>{}); }
+
+    // AUTH LOGIC
+    function toggleAuth(showReg) {
+        document.getElementById('login-form').classList.toggle('hidden', showReg);
+        document.getElementById('reg-form').classList.toggle('hidden', !showReg);
+    }
+
+    async function selfRegister() {
+        const u = document.getElementById('u-reg').value.toLowerCase().trim();
+        const p = document.getElementById('p-reg').value;
+        if(u.length < 3 || p.length < 4) return alert("Usuario min. 3 carácteres, Password min. 4");
+        
+        const check = await db.ref(`users/${u}`).once('value');
+        if(check.exists()) return alert("El usuario ya existe");
+
+        db.ref(`users/${u}`).set({ pass: p, role: 'user' }).then(() => {
+            alert("¡Cuenta creada! Ya puedes iniciar sesión");
+            toggleAuth(false);
+        });
+    }
 
     async function login() {
         const u = document.getElementById('u-in').value.toLowerCase().trim(), p = document.getElementById('p-in').value;
@@ -168,6 +209,7 @@
     }
     if(me) document.getElementById('auth-wall').classList.add('hidden');
 
+    // NAVEGACIÓN
     function tab(t) {
         document.querySelectorAll('.view-sec').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
@@ -176,7 +218,22 @@
         if(t === 'cal') renderCal();
     }
 
-    // MODIFICADO: Muestra quién agendó en el calendario
+    // ADMIN USERS
+    function openUserMgmt() {
+        document.getElementById('m-users').classList.remove('hidden');
+        const list = document.getElementById('user-list-admin');
+        db.ref('users').on('value', snap => {
+            list.innerHTML = '';
+            snap.forEach(s => {
+                list.innerHTML += `<div class="flex justify-between p-3 border-b text-[11px] font-bold uppercase">
+                    <span>${s.key}</span>
+                    <button onclick="db.ref('users/${s.key}').remove()" class="text-red-500"><i class="fas fa-trash"></i></button>
+                </div>`;
+            });
+        });
+    }
+
+    // CALENDARIO TRACKING
     function renderCal() {
         const grid = document.getElementById('cal-render'); grid.innerHTML = '';
         const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -190,22 +247,11 @@
                 cell.onclick = () => { selD = i; document.getElementById('ev-id').value = ''; document.getElementById('ev-txt').value = ''; document.getElementById('ev-time').value = '09:00'; document.getElementById('btn-del-ev').classList.add('hidden'); document.getElementById('m-cal').classList.remove('hidden'); };
                 let h = `<span class="text-[10px] font-bold text-slate-400">${i}</span><div class="mt-1 space-y-1">`;
                 if(evs['d'+i]) Object.entries(evs['d'+i]).forEach(([id, ev]) => { 
-                    // Se agregó el usuario (ev.u) en el texto del evento
-                    h += `<div onclick="event.stopPropagation(); editEv('${id}', '${ev.txt}', '${ev.time}', ${i})" class="bg-blue-600 text-white text-[7px] p-1 rounded font-bold truncate">` +
-                         `<i class="fas fa-user-circle mr-1 opacity-70"></i>[${ev.u || '?'}] ${ev.time} ${ev.txt}</div>`; 
+                    h += `<div onclick="event.stopPropagation(); editEv('${id}', '${ev.txt}', '${ev.time}', ${i})" class="bg-blue-600 text-white text-[7px] p-1 rounded font-bold truncate">[${ev.u || '?'}] ${ev.time} ${ev.txt}</div>`; 
                 });
                 cell.innerHTML = h + '</div>'; grid.appendChild(cell);
             }
         });
-    }
-
-    function editEv(id, txt, time, day) {
-        selD = day;
-        document.getElementById('ev-id').value = id;
-        document.getElementById('ev-txt').value = txt;
-        document.getElementById('ev-time').value = time || '09:00';
-        document.getElementById('btn-del-ev').classList.remove('hidden');
-        document.getElementById('m-cal').classList.remove('hidden');
     }
 
     function saveEvent() {
@@ -217,30 +263,72 @@
         document.getElementById('m-cal').classList.add('hidden');
     }
 
-    function deleteEvent() {
-        if(confirm('¿Borrar actividad?')) {
-            db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove();
-            document.getElementById('m-cal').classList.add('hidden');
-        }
+    function editEv(id, txt, time, day) {
+        selD = day; document.getElementById('ev-id').value = id; document.getElementById('ev-txt').value = txt; document.getElementById('ev-time').value = time || '09:00'; document.getElementById('btn-del-ev').classList.remove('hidden'); document.getElementById('m-cal').classList.remove('hidden');
     }
 
-    function previewFile(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                tempFileData = { base64: e.target.result, name: input.files[0].name, type: input.files[0].type };
-                document.getElementById('file-indicator').classList.remove('hidden');
-                document.getElementById('file-name-display').innerText = "LISTO: " + input.files[0].name;
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
+    function deleteEvent() { if(confirm('¿Borrar?')) { db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove(); document.getElementById('m-cal').classList.add('hidden'); } }
+
+    // PIPELINE TRACKING
+    function loadDeals() {
+        db.ref(`deals/${curM}-${curY}`).on('value', snap => {
+            deals = snap.val() ? Object.values(snap.val()) : [];
+            updateStats();
+            ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => document.getElementById('st-'+s).innerHTML = `<p class="text-[9px] font-black text-slate-400 mb-4 uppercase text-center">${s}</p>`);
+            deals.forEach(d => {
+                const card = document.createElement('div'); card.className = "card-deal"; card.draggable = true;
+                card.ondragstart = (e) => e.dataTransfer.setData("text", d.id); card.onclick = () => openDeal(d.id);
+                card.innerHTML = `<button onclick="event.stopPropagation(); deleteDeal('${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt text-[8px]"></i></button><div class="font-bold text-slate-700 text-xs truncate uppercase">${d.cliente}</div><div class="text-md font-black text-slate-900 mt-1">$${(d.monto||0).toLocaleString()}</div><div class="text-[7px] text-blue-500 font-bold uppercase mt-2">POR: ${d.by || 'S/N'}</div>`;
+                document.getElementById('st-'+d.status).appendChild(card);
+            });
+        });
     }
+
+    function openDeal(id = null) {
+        const d = id ? deals.find(x => x.id === id) : null;
+        document.getElementById('f-id').value = id || ''; document.getElementById('f-st').value = d ? d.status : 'prospecto';
+        document.getElementById('f-cli').value = d ? d.cliente : ''; document.getElementById('f-mon').value = d ? d.monto : '';
+        document.getElementById('m-deal').classList.remove('hidden');
+    }
+
+    function saveDeal() {
+        const id = document.getElementById('f-id').value || 'ID-' + Date.now();
+        const data = { id, cliente: document.getElementById('f-cli').value, monto: parseFloat(document.getElementById('f-mon').value)||0, status: document.getElementById('f-st').value || 'prospecto', by: me };
+        db.ref(`deals/${curM}-${curY}/${id}`).set(data).then(() => document.getElementById('m-deal').classList.add('hidden'));
+    }
+
+    function deleteDeal(id) { if(confirm('¿Borrar?')) db.ref(`deals/${curM}-${curY}/${id}`).remove(); }
+    function drop(e, st) { e.preventDefault(); const id = e.dataTransfer.getData("text"); if(id) db.ref(`deals/${curM}-${curY}/${id}`).update({ status: st, by: me }); }
+    function allow(e) { e.preventDefault(); }
+
+    function updateStats() {
+        let e = 0, g = 0, p = 0;
+        deals.forEach(d => { const m = parseFloat(d.monto) || 0; if(d.status === 'ganado') g += m; else if(d.status === 'perdido') p += m; else e += m; });
+        document.getElementById('stat-espera').innerText = '$' + e.toLocaleString();
+        document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString();
+        document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
+    }
+
+    // CHAT & OTHERS
+    function loadUsers() {
+        db.ref('users').once('value', snap => {
+            const cont = document.getElementById('user-tabs-container'); cont.innerHTML = '';
+            snap.forEach(s => {
+                if(s.key === me) return;
+                const path = [me, s.key].sort().join('_');
+                const t = document.createElement('div'); t.id = 'tab-priv-'+path; t.className = "chat-tab border-r px-4"; t.innerText = s.key;
+                t.onclick = () => switchChat(path, true, s.key); cont.appendChild(t);
+            });
+        });
+    }
+
+    function previewFile(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { tempFileData = { base64: e.target.result, name: input.files[0].name, type: input.files[0].type }; document.getElementById('file-indicator').classList.remove('hidden'); document.getElementById('file-name-display').innerText = "LISTO: " + input.files[0].name; }; reader.readAsDataURL(input.files[0]); } }
     function clearFile() { tempFileData = null; document.getElementById('chat-file').value = ""; document.getElementById('file-indicator').classList.add('hidden'); }
     function switchChat(room, priv = false, name = "") {
         currentRoom = room; isPrivate = priv;
         document.querySelectorAll('.chat-tab').forEach(el => el.classList.remove('active'));
         if(!priv) { document.getElementById('tab-'+room).classList.add('active'); document.getElementById('chat-header').innerText = "SALA: " + room; }
-        else { document.getElementById('tab-priv-'+room).classList.add('active'); document.getElementById('chat-header').innerText = "CHATEANDO CON: " + name; }
+        else { document.getElementById('tab-priv-'+room).classList.add('active'); document.getElementById('chat-header').innerText = "CON: " + name; }
         loadMessages();
     }
     function loadMessages() {
@@ -251,7 +339,7 @@
             let count = 0;
             snap.forEach(s => { 
                 count++; const d = s.val(), isMe = d.u === me; 
-                let fHtml = d.file ? `<a href="${d.file.base64}" download="${d.file.name}" class="block mt-2 p-1 bg-black/5 rounded text-[8px] font-bold underline"><i class="fas fa-file-download mr-1"></i> ${d.file.name}</a>` : '';
+                let fHtml = d.file ? `<a href="${d.file.base64}" download="${d.file.name}" class="block mt-2 p-1 bg-black/5 rounded text-[8px] font-bold underline">📎 ${d.file.name}</a>` : '';
                 a.innerHTML += `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="${isMe?'bg-blue-600 text-white':'bg-white border'} p-2 rounded-lg max-w-[85%]"><b>${d.u}:</b> ${d.m} ${fHtml}</div></div>`; 
             });
             a.scrollTop = a.scrollHeight;
@@ -259,80 +347,20 @@
             lastMsgCount[path] = count;
         });
     }
-    function sendMsg() { 
-        const i = document.getElementById('chat-in'); if(!i.value.trim() && !tempFileData) return; 
-        const path = isPrivate ? `private_chats/${currentRoom}` : `chats/${currentRoom}`; 
-        db.ref(path).push({ u: me, m: i.value, file: tempFileData || null, ts: Date.now() }); 
-        i.value = ''; clearFile(); playNotif();
-    }
-
-    // MODIFICADO: Muestra quién movió/guardó el deal en el Pipeline
-    function loadDeals() {
-        db.ref(`deals/${curM}-${curY}`).on('value', snap => {
-            deals = snap.val() ? Object.values(snap.val()) : [];
-            updateStats();
-            ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => document.getElementById('st-'+s).innerHTML = `<p class="text-[9px] font-black text-slate-400 mb-4 uppercase text-center">${s}</p>`);
-            deals.forEach(d => {
-                const card = document.createElement('div'); card.className = "card-deal"; card.draggable = true;
-                card.ondragstart = (e) => e.dataTransfer.setData("text", d.id); card.onclick = () => openDeal(d.id);
-                // Se agregó la línea de "POR:" en el pie de la tarjeta
-                card.innerHTML = `
-                    <button onclick="event.stopPropagation(); deleteDeal('${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt text-[8px]"></i></button>
-                    <div class="font-bold text-slate-700 text-xs truncate uppercase">${d.cliente}</div>
-                    <div class="text-md font-black text-slate-900 mt-1">$${(d.monto||0).toLocaleString()}</div>
-                    <div class="mt-3 pt-2 border-t border-slate-50 flex items-center justify-between">
-                        <span class="text-[7px] text-blue-500 font-black uppercase tracking-tighter bg-blue-50 px-1.5 py-0.5 rounded">POR: ${d.by || 'S/N'}</span>
-                    </div>`;
-                document.getElementById('st-'+d.status).appendChild(card);
-            });
-        });
-    }
-    function openDeal(id = null) {
-        const d = id ? deals.find(x => x.id === id) : null;
-        document.getElementById('f-id').value = id || ''; document.getElementById('f-st').value = d ? d.status : 'prospecto';
-        document.getElementById('f-cli').value = d ? d.cliente : ''; document.getElementById('f-mon').value = d ? d.monto : '';
-        document.getElementById('m-deal').classList.remove('hidden');
-    }
-    function saveDeal() {
-        const id = document.getElementById('f-id').value || 'ID-' + Date.now();
-        const data = { id, cliente: document.getElementById('f-cli').value, monto: parseFloat(document.getElementById('f-mon').value)||0, status: document.getElementById('f-st').value || 'prospecto', by: me };
-        db.ref(`deals/${curM}-${curY}/${id}`).set(data).then(() => document.getElementById('m-deal').classList.add('hidden'));
-    }
-    function deleteDeal(id) { if(confirm('¿Borrar?')) db.ref(`deals/${curM}-${curY}/${id}`).remove(); }
-    function drop(e, st) { e.preventDefault(); const id = e.dataTransfer.getData("text"); if(id) db.ref(`deals/${curM}-${curY}/${id}`).update({ status: st, by: me }); }
-    function allow(e) { e.preventDefault(); }
-    function updateStats() {
-        let e = 0, g = 0, p = 0;
-        deals.forEach(d => { const m = parseFloat(d.monto) || 0; if(d.status === 'ganado') g += m; else if(d.status === 'perdido') p += m; else e += m; });
-        document.getElementById('stat-espera').innerText = '$' + e.toLocaleString();
-        document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString();
-        document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
-    }
-
-    function loadUsers() {
-        db.ref('users').once('value', snap => {
-            const cont = document.getElementById('user-tabs-container'); cont.innerHTML = '';
-            snap.forEach(s => {
-                if(s.key === me) return;
-                const path = [me, s.key].sort().join('_');
-                const t = document.createElement('div');
-                t.id = 'tab-priv-'+path; t.className = "chat-tab border-r px-4"; t.innerText = s.key;
-                t.onclick = () => switchChat(path, true, s.key);
-                cont.appendChild(t);
-            });
-        });
-    }
+    function sendMsg() { const i = document.getElementById('chat-in'); if(!i.value.trim() && !tempFileData) return; const path = isPrivate ? `private_chats/${currentRoom}` : `chats/${currentRoom}`; db.ref(path).push({ u: me, m: i.value, file: tempFileData || null, ts: Date.now() }); i.value = ''; clearFile(); playNotif(); }
 
     function initApp() {
         curM = document.getElementById('m-sel').value; curY = new Date().getFullYear();
-        if(me) { loadDeals(); loadMessages(); loadUsers(); renderCal(); }
+        if(me) { 
+            loadDeals(); loadMessages(); loadUsers(); renderCal(); 
+            if(me === 'admin') document.getElementById('admin-user-btn').classList.remove('hidden');
+        }
     }
 
     window.onload = () => {
         const ms = document.getElementById('m-sel'), n = new Date();
         ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"].forEach((t,i)=>{ 
-            const o=document.createElement('option'); o.value=i; o.innerText=t; 
-            if(i===n.getMonth()) o.selected=true; ms.appendChild(o); 
+            const o=document.createElement('option'); o.value=i; o.innerText=t; if(i===n.getMonth()) o.selected=true; ms.appendChild(o); 
         });
         initApp();
     };
