@@ -31,14 +31,12 @@
 <div id="auth-wall" class="fixed inset-0 bg-slate-50 z-[9999] flex items-center justify-center">
     <div class="bg-white p-10 rounded-3xl shadow-xl w-96 text-center border">
         <div class="text-3xl font-black text-blue-900 mb-8 italic uppercase">Impetec <span class="text-blue-500">Hub</span></div>
-        
         <div id="login-form">
             <input type="text" id="u-in" placeholder="Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
             <input type="password" id="p-in" placeholder="Contraseña" class="w-full border p-4 rounded-xl mb-8 text-center outline-none">
             <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold uppercase tracking-widest mb-4">Entrar</button>
             <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(true)">¿No tienes cuenta? Regístrate aquí</p>
         </div>
-
         <div id="reg-form" class="hidden">
             <h3 class="text-sm font-black text-blue-600 mb-4 uppercase">Crear Nueva Cuenta</h3>
             <input type="text" id="u-reg" placeholder="Nuevo Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
@@ -54,6 +52,9 @@
     <nav class="flex-1 overflow-y-auto">
         <button onclick="tab('crm')" class="nav-link active" id="btn-crm"><i class="fas fa-layer-group"></i> Pipeline Flow</button>
         <button onclick="tab('cal')" class="nav-link" id="btn-cal"><i class="fas fa-calendar-alt"></i> Agenda Operativa</button>
+        
+        <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> Analytics BI</button>
+        
         <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos y Finanzas</div>
         <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
         <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
@@ -99,6 +100,8 @@
         </div>
         <div class="grid grid-cols-7 gap-px bg-slate-200 border-x border-b rounded-b-2xl overflow-hidden" id="cal-render"></div>
     </div>
+
+    <div id="v-bi" class="view-sec hidden"><iframe src="REPORTES_BI.html"></iframe></div>
 
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
@@ -180,7 +183,6 @@
 
     function playNotif() { document.getElementById('notif-snd').play().catch(()=>{}); }
 
-    // AUTH LOGIC
     function toggleAuth(showReg) {
         document.getElementById('login-form').classList.toggle('hidden', showReg);
         document.getElementById('reg-form').classList.toggle('hidden', !showReg);
@@ -190,10 +192,8 @@
         const u = document.getElementById('u-reg').value.toLowerCase().trim();
         const p = document.getElementById('p-reg').value;
         if(u.length < 3 || p.length < 4) return alert("Usuario min. 3 carácteres, Password min. 4");
-        
         const check = await db.ref(`users/${u}`).once('value');
         if(check.exists()) return alert("El usuario ya existe");
-
         db.ref(`users/${u}`).set({ pass: p, role: 'user' }).then(() => {
             alert("¡Cuenta creada! Ya puedes iniciar sesión");
             toggleAuth(false);
@@ -209,16 +209,17 @@
     }
     if(me) document.getElementById('auth-wall').classList.add('hidden');
 
-    // NAVEGACIÓN
+    // NAVEGACIÓN ACTUALIZADA
     function tab(t) {
         document.querySelectorAll('.view-sec').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         document.getElementById('v-'+t).classList.remove('hidden');
         document.getElementById('btn-'+t).classList.add('active');
         if(t === 'cal') renderCal();
+        // Si entramos a BI, refrescamos el iframe para que cargue datos frescos
+        if(t === 'bi') document.querySelector('#v-bi iframe').src = 'REPORTES_BI.html';
     }
 
-    // ADMIN USERS
     function openUserMgmt() {
         document.getElementById('m-users').classList.remove('hidden');
         const list = document.getElementById('user-list-admin');
@@ -233,7 +234,6 @@
         });
     }
 
-    // CALENDARIO TRACKING
     function renderCal() {
         const grid = document.getElementById('cal-render'); grid.innerHTML = '';
         const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -269,7 +269,6 @@
 
     function deleteEvent() { if(confirm('¿Borrar?')) { db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove(); document.getElementById('m-cal').classList.add('hidden'); } }
 
-    // PIPELINE TRACKING
     function loadDeals() {
         db.ref(`deals/${curM}-${curY}`).on('value', snap => {
             deals = snap.val() ? Object.values(snap.val()) : [];
@@ -309,7 +308,6 @@
         document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
     }
 
-    // CHAT & OTHERS
     function loadUsers() {
         db.ref('users').once('value', snap => {
             const cont = document.getElementById('user-tabs-container'); cont.innerHTML = '';
