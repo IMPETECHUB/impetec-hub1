@@ -96,6 +96,7 @@
         <button onclick="tab('crm')" class="nav-link active" id="btn-crm"><i class="fas fa-layer-group"></i> Pipeline Flow</button>
         <button onclick="tab('cal')" class="nav-link" id="btn-cal"><i class="fas fa-calendar-alt"></i> Agenda Operativa</button>
         <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> Analytics BI</button>
+        
         <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos y Finanzas</div>
         <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
         <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
@@ -132,7 +133,7 @@
     </div>
 
     <div id="v-cal" class="view-sec hidden"><iframe src="AGENDA.HTML"></iframe></div>
-    <div id="v-bi" class="view-sec hidden"><iframe src="reportes.HTML"></iframe></div>
+    <div id="v-bi" class="view-sec hidden"><iframe src="reportes.html"></iframe></div>
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
     <div id="v-cot" class="view-sec hidden"><iframe src="MACHOTE DE COTIZACION.html"></iframe></div>
@@ -197,10 +198,8 @@
     let me = localStorage.getItem('imp_user'), deals = [], curM, curY, selD, lastMsgCount = {};
     let currentRoom = 'general', isPrivate = false, tempFileData = null;
 
-    // FUNCIÓN PARA ABATIR SIDEBAR
     function toggleSidebar() {
-        const side = document.getElementById('sidebar');
-        side.classList.toggle('collapsed');
+        document.getElementById('sidebar').classList.toggle('collapsed');
     }
 
     function playNotif() { document.getElementById('notif-snd').play().catch(()=>{}); }
@@ -235,8 +234,9 @@
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         document.getElementById('v-'+t).classList.remove('hidden');
         document.getElementById('btn-'+t).classList.add('active');
+        // REFRESCAR IFRAMES CON NOMBRES CORRECTOS
         if(t === 'cal') document.querySelector('#v-cal iframe').src = 'AGENDA.HTML';
-        if(t === 'bi') document.querySelector('#v-bi iframe').src = 'REPORTES_BI.html';
+        if(t === 'bi') document.querySelector('#v-bi iframe').src = 'reportes.html';
     }
 
     function openUserMgmt() {
@@ -349,6 +349,3 @@
 </script>
 </body>
 </html>
-
-
-
