@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>IMPETEC AGENDA ELITE + PRINT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; color: #0f172a; }
+
+        .cal-day { 
+            min-height: 180px; 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            padding: 10px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cal-day:hover { border-color: #3b82f6; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .cal-day.today { border: 3px solid #2563eb; background: #f0f7ff; }
+
+        .event-tag { 
+            font-size: 13px; 
+            padding: 10px; 
+            border-radius: 10px; 
+            margin-bottom: 6px; 
+            font-weight: 700; 
+            color: white; 
+            line-height: 1.3;
+            border-left: 5px solid rgba(0,0,0,0.2);
+        }
+
+        .user-stamp { font-size: 9px; font-weight: 900; text-transform: uppercase; opacity: 0.8; display: block; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 4px; }
+
+        /* Estados */
+        .st-proceso { animation: pulse-active 2s infinite; }
+        .st-pasado { background: #94a3b8 !important; opacity: 0.8; }
+        .st-finalizado { background: #1e293b !important; opacity: 0.4; text-decoration: line-through; }
+
+        /* Prioridades */
+        .prio-alta { background: #ef4444; animation: alert-red 1.5s infinite; }
+        .prio-media { background: #f59e0b; }
+        .prio-baja { background: #10b981; }
+
+        @keyframes alert-red { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+        @keyframes pulse-active { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        @media print {
+            .no-print, button, select, #clock { display: none !important; }
+            body { background: white; padding: 0; }
+            .cal-day { min-height: 120px; border: 1px solid #ccc !important; }
+            .event-tag { color: black !important; border: 1px solid #eee !important; background: transparent !important; page-break-inside: avoid; }
+            .user-stamp { color: #666 !important; border-bottom: 1px solid #ccc; }
+            .max-w-[1600px] { max-width: 100% !important; }
+            #cal-render { grid-template-columns: repeat(7, 1fr) !important; gap: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-[1600px] mx-auto bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 mb-6 flex flex-wrap justify-between items-center no-print">
+        <div>
+            <h2 class="text-3xl font-black text-slate-900 italic uppercase">Agenda <span class="text-blue-600">Pro</span></h2>
+            <p class="text-slate-400 font-bold text-[10px] tracking-widest uppercase">Impetec Hub • Operaciones</p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3 items-center">
+            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2 rounded-xl font-bold text-sm transition-all">
+                <i class="fas fa-print mr-2"></i>Imprimir Mes
+            </button>
+            <select id="user-filter" onchange="renderCal()" class="bg-slate-50 border-2 border-slate-100 p-2 rounded-xl font-bold text-sm outline-none">
+                <option value="all">TODOS</option>
+            </select>
+            <select id="m-sel" onchange="renderCal()" class="bg-blue-50 border-2 border-blue-100 p-2 rounded-xl font-bold text-sm text-blue-600 outline-none"></select>
+            <div id="clock" class="text-xl font-black bg-slate-900 text-white px-6 py-2 rounded-xl">00:00:00</div>
+        </div>
+    </div>
+
+    <div class="max-w-[1600px] mx-auto grid grid-cols-7 gap-3" id="cal-render"></div>
+
+    <div id="m-cal" class="fixed inset-0 bg-slate-900/80 hidden z-[2000] flex items-center justify-center backdrop-blur-md no-print">
+        <div class="bg-white p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl">
+            <h3 id="modal-title" class="text-2xl font-black mb-6 text-slate-800 uppercase italic">Actividad</h3>
+            <div class="space-y-4">
+                <input type="hidden" id="ev-id">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Hora</label>
+                        <input type="time" id="ev-time" class="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-black text-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Prioridad</label>
+                        <select id="ev-prio" class="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold outline-none">
+                            <option value="prio-baja">🟢 BAJA</option>
+                            <option value="prio-media" selected>🟡 MEDIA</option>
+                            <option value="prio-alta">🔴 ALTA</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Descripción</label>
+                    <textarea id="ev-txt" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl h-32 font-bold text-md outline-none" placeholder="Escribe aquí..."></textarea>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Estado</label>
+                    <select id="ev-status" class="w-full bg-slate-50 border-2 border-slate-100 p-3 rounded-xl font-bold outline-none">
+                        <option value="pendiente">⏳ PENDIENTE</option>
+                        <option value="finalizado">✅ FINALIZADO</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="saveEvent()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">GUARDAR</button>
+                <button onclick="deleteEvent()" id="btn-del-ev" class="bg-red-50 text-red-500 px-6 rounded-2xl hidden"><i class="fas fa-trash"></i></button>
+            </div>
+            <button onclick="closeModal()" class="w-full mt-4 text-slate-400 font-bold uppercase text-[10px]">Cerrar</button>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    let me = localStorage.getItem('imp_user') || 'Admin';
+    let curM, curY = new Date().getFullYear(), selD;
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString('es-MX', {hour12:false});
+    }
+    setInterval(updateClock, 1000);
+
+    function renderCal() {
+        curM = document.getElementById('m-sel').value;
+        const uFilter = document.getElementById('user-filter').value;
+        const grid = document.getElementById('cal-render');
+        const now = new Date();
+        const todayAtZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const currentHourStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        const daysInMonth = new Date(curY, parseInt(curM) + 1, 0).getDate();
+
+        db.ref(`agenda/${curM}-${curY}`).on('value', snap => {
+            const evs = snap.val() || {};
+            grid.innerHTML = '';
+            
+            for(let i=1; i<=daysInMonth; i++) {
+                const cell = document.createElement('div');
+                const cellDate = new Date(curY, curM, i);
+                const isToday = (i === now.getDate() && curM == now.getMonth());
+                const isPast = (cellDate < todayAtZero);
+                
+                cell.className = `cal-day ${isToday ? 'today' : ''}`;
+                cell.onclick = () => openModal(i);
+                
+                let h = `<span class="text-xl font-black ${isToday?'text-blue-600':'text-slate-300'}">${i}</span><div class="mt-2 flex-1">`;
+                
+                if(evs['d'+i]) {
+                    Object.entries(evs['d'+i]).forEach(([id, ev]) => {
+                        if(uFilter !== 'all' && ev.u !== uFilter) return;
+
+                        let stClass = 'st-pendiente';
+                        if(ev.status === 'finalizado') stClass = 'st-finalizado';
+                        else if (isPast) stClass = 'st-pasado';
+                        else if (isToday && currentHourStr >= ev.time) stClass = 'st-proceso';
+
+                        h += `<div onclick="event.stopPropagation(); editEv('${id}', ${JSON.stringify(ev).replace(/"/g, '&quot;')}, ${i})" 
+                                   class="event-tag ${stClass} ${ev.prio || 'prio-media'}">
+                                <span class="user-stamp">${ev.u} • ${ev.time}</span>
+                                ${ev.txt}
+                              </div>`; 
+                    });
+                }
+                cell.innerHTML = h + '</div>';
+                grid.appendChild(cell);
+            }
+        });
+    }
+
+    function openModal(day) {
+        selD = day;
+        document.getElementById('modal-title').innerText = `Día ${day}`;
+        document.getElementById('ev-id').value = '';
+        document.getElementById('ev-txt').value = '';
+        document.getElementById('ev-time').value = '09:00';
+        document.getElementById('ev-prio').value = 'prio-media';
+        document.getElementById('ev-status').value = 'pendiente';
+        document.getElementById('btn-del-ev').classList.add('hidden');
+        document.getElementById('m-cal').classList.remove('hidden');
+    }
+
+    function editEv(id, data, day) {
+        selD = day;
+        document.getElementById('modal-title').innerText = `Editar Tarea`;
+        document.getElementById('ev-id').value = id;
+        document.getElementById('ev-txt').value = data.txt;
+        document.getElementById('ev-time').value = data.time;
+        document.getElementById('ev-prio').value = data.prio || 'prio-media';
+        document.getElementById('ev-status').value = data.status || 'pendiente';
+        document.getElementById('btn-del-ev').classList.remove('hidden');
+        document.getElementById('m-cal').classList.remove('hidden');
+    }
+
+    function saveEvent() {
+        const id = document.getElementById('ev-id').value;
+        const txt = document.getElementById('ev-txt').value;
+        if(!txt) return alert("Describe la actividad");
+        const data = { txt: txt, time: document.getElementById('ev-time').value, prio: document.getElementById('ev-prio').value, status: document.getElementById('ev-status').value, u: me };
+        const ref = db.ref(`agenda/${curM}-${curY}/d${selD}`);
+        if(id) ref.child(id).update(data); else ref.push(data);
+        closeModal();
+    }
+
+    function deleteEvent() { if(confirm('¿Eliminar actividad?')) { db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove(); closeModal(); } }
+    function closeModal() { document.getElementById('m-cal').classList.add('hidden'); }
+
+    window.onload = () => {
+        const ms = document.getElementById('m-sel'), n = new Date();
+        // Cargar Meses
+        ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].forEach((t,i)=>{ 
+            const o=document.createElement('option'); o.value=i; o.innerText=t; 
+            if(i===n.getMonth()) o.selected=true; 
+            ms.appendChild(o); 
+        });
+
+        // Cargar Usuarios y Renderizar
+        db.ref('users').once('value', snap => {
+            const f = document.getElementById('user-filter');
+            f.innerHTML = '<option value="all">TODOS</option>';
+            snap.forEach(u => { const o = document.createElement('option'); o.value = u.key; o.innerText = u.key.toUpperCase(); f.appendChild(o); });
+            
+            // Forzar renderizado inicial
+            renderCal();
+        });
+        updateClock();
+    };
+</script>
+</body>
+</html>
