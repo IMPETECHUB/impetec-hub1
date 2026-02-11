@@ -3,83 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IMPETEC BI - DASHBOARD ESTRATÉGICO</title>
+    <title>IMPETEC BI - ESTRATÉGICO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .stat-card { transition: all 0.3s ease; }
+        .chart-container { position: relative; height: 280px; width: 100%; }
         @media print { .no-print { display: none; } }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+    <div class="flex justify-between items-center mb-8 no-print">
         <div>
-            <h1 class="text-3xl font-black text-blue-900 uppercase tracking-tighter">Impetec <span class="text-blue-500">BI Analytics</span></h1>
-            <p class="text-slate-500 font-bold text-xs uppercase tracking-widest">Reporte de Desempeño Comercial</p>
+            <h1 class="text-2xl font-black text-blue-900 uppercase">Impetec <span class="text-blue-500">BI</span></h1>
+            <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Dashboard de Analítica</p>
         </div>
-        <div class="flex gap-3 no-print">
-            <select id="bi-month" onchange="loadAnalytics()" class="bg-white border-2 border-blue-900 rounded-xl px-4 py-2 font-bold text-blue-900 outline-none cursor-pointer"></select>
-            <button onclick="window.print()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-xs uppercase hover:bg-slate-700 transition-colors">
-                <i class="fas fa-print mr-2"></i> PDF
-            </button>
+        <div class="flex gap-2">
+            <select id="bi-month" onchange="loadAnalytics()" class="bg-white border-2 border-blue-900 rounded-lg px-3 py-1 text-sm font-bold text-blue-900"></select>
+            <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-1 rounded-lg font-bold text-[10px] uppercase">PDF</button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-blue-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase">Ventas Totales (Ganado)</p>
-            <h2 id="kpi-total" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border-b-4 border-blue-500">
+            <p class="text-[9px] font-black text-slate-400 uppercase">Ventas (Ganado)</p>
+            <h2 id="kpi-total" class="text-2xl font-black text-slate-800">$0.00</h2>
         </div>
-        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase">En Negociación</p>
-            <h2 id="kpi-pipeline" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+        <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border-b-4 border-amber-500">
+            <p class="text-[9px] font-black text-slate-400 uppercase">Pipeline Activo</p>
+            <h2 id="kpi-pipeline" class="text-2xl font-black text-slate-800">$0.00</h2>
         </div>
-        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-green-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase">Tasa de Cierre</p>
-            <h2 id="kpi-rate" class="text-3xl font-black text-slate-800 mt-1">0%</h2>
+        <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border-b-4 border-green-500">
+            <p class="text-[9px] font-black text-slate-400 uppercase">Eficiencia</p>
+            <h2 id="kpi-rate" class="text-2xl font-black text-slate-800">0%</h2>
         </div>
-        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-red-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase">Proyectos Perdidos</p>
-            <h2 id="kpi-lost" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+        <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border-b-4 border-red-500">
+            <p class="text-[9px] font-black text-slate-400 uppercase">Perdidos</p>
+            <h2 id="kpi-lost" class="text-2xl font-black text-slate-800">$0.00</h2>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white p-8 rounded-3xl shadow-sm border">
-            <h3 class="text-sm font-black text-blue-900 uppercase mb-6 flex items-center">
-                <i class="fas fa-chart-pie mr-2 text-blue-500"></i> Distribución por Estado
-            </h3>
-            <div class="chart-container">
-                <canvas id="chartPie"></canvas>
-            </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border">
+            <h3 class="text-xs font-black text-blue-900 uppercase mb-4 italic">Estado de Proyectos</h3>
+            <div class="chart-container"><canvas id="chartPie"></canvas></div>
         </div>
-
-        <div class="bg-white p-8 rounded-3xl shadow-sm border">
-            <h3 class="text-sm font-black text-blue-900 uppercase mb-6 flex items-center">
-                <i class="fas fa-crown mr-2 text-amber-500"></i> Top 5 Clientes (Monto)
-            </h3>
-            <div class="chart-container">
-                <canvas id="chartBar"></canvas>
-            </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border">
+            <h3 class="text-xs font-black text-blue-900 uppercase mb-4 italic">Top Facturación</h3>
+            <div class="chart-container"><canvas id="chartBar"></canvas></div>
         </div>
     </div>
 
     <script>
-        // Configuración con tu URL de Firebase integrada
-        const firebaseConfig = { 
-            databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" 
-        };
+        // Configuración centralizada
+        const config = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
         
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(config);
+            var db = firebase.database();
+        } catch (e) {
+            console.error("Error inicializando Firebase:", e);
+        }
 
         let chartPie, chartBar;
 
@@ -93,91 +82,66 @@
             loadAnalytics();
         }
 
-        async function loadAnalytics() {
+        function loadAnalytics() {
             const m = document.getElementById('bi-month').value;
             const y = new Date().getFullYear();
             
-            // Referencia a los datos en Firebase
+            // Usamos .once para evitar bucles de carga en GitHub
             db.ref(`deals/${m}-${y}`).on('value', snap => {
                 const data = snap.val() ? Object.values(snap.val()) : [];
-                processData(data);
+                render(data);
+            }, err => {
+                console.warn("Bloqueo de lectura:", err.message);
+                alert("Atención: No se pudieron cargar los datos. Revisa las reglas de tu base de datos.");
             });
         }
 
-        function processData(deals) {
-            let stats = { prospecto: 0, cotizado: 0, obra: 0, ganado: 0, perdido: 0 };
-            let clientData = {};
-            let totalGanado = 0, totalPipeline = 0, totalPerdido = 0;
+        function render(deals) {
+            let s = { prospecto:0, cotizado:0, obra:0, ganado:0, perdido:0 }, c = {}, g=0, p=0, l=0;
 
             deals.forEach(d => {
-                const monto = parseFloat(d.monto) || 0;
-                const status = (d.status || '').toLowerCase();
-                stats[status] = (stats[status] || 0) + monto;
+                const val = parseFloat(d.monto) || 0;
+                const st = (d.status || '').toLowerCase();
+                if(s.hasOwnProperty(st)) s[st] += val;
 
-                if(status === 'ganado') {
-                    totalGanado += monto;
-                    if(d.cliente) clientData[d.cliente] = (clientData[d.cliente] || 0) + monto;
-                } else if(status === 'perdido') {
-                    totalPerdido += monto;
-                } else {
-                    totalPipeline += monto;
-                }
+                if(st === 'ganado') {
+                    g += val;
+                    if(d.cliente) c[d.cliente] = (c[d.cliente] || 0) + val;
+                } else if(st === 'perdido') { l += val; } 
+                else { p += val; }
             });
 
-            // Actualización de KPIs en el DOM
-            document.getElementById('kpi-total').innerText = '$' + totalGanado.toLocaleString();
-            document.getElementById('kpi-pipeline').innerText = '$' + totalPipeline.toLocaleString();
-            document.getElementById('kpi-lost').innerText = '$' + totalPerdido.toLocaleString();
-            
-            const totalIntentos = totalGanado + totalPerdido;
-            const rate = totalIntentos > 0 ? ((totalGanado / totalIntentos) * 100).toFixed(1) : 0;
-            document.getElementById('kpi-rate').innerText = rate + '%';
+            document.getElementById('kpi-total').innerText = '$' + g.toLocaleString();
+            document.getElementById('kpi-pipeline').innerText = '$' + p.toLocaleString();
+            document.getElementById('kpi-lost').innerText = '$' + l.toLocaleString();
+            document.getElementById('kpi-rate').innerText = (g+l > 0 ? (g/(g+l)*100).toFixed(1) : 0) + '%';
 
-            updateCharts(stats, clientData);
+            updateCharts(s, c);
         }
 
-        function updateCharts(stats, clients) {
-            // Gráfico de Distribución (Doughnut)
+        function updateCharts(s, c) {
             if(chartPie) chartPie.destroy();
             chartPie = new Chart(document.getElementById('chartPie'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Prospecto', 'Cotizado', 'Obra', 'Ganado', 'Perdido'],
+                    labels: ['Pros', 'Cot', 'Obra', 'Gan', 'Per'],
                     datasets: [{
-                        data: [stats.prospecto, stats.cotizado, stats.obra, stats.ganado, stats.perdido],
-                        backgroundColor: ['#94a3b8', '#f59e0b', '#3b82f6', '#22c55e', '#ef4444'],
-                        borderWidth: 0
+                        data: [s.prospecto, s.cotizado, s.obra, s.ganado, s.perdido],
+                        backgroundColor: ['#94a3b8', '#f59e0b', '#3b82f6', '#22c55e', '#ef4444']
                     }]
                 },
-                options: { 
-                    maintainAspectRatio: false, 
-                    cutout: '70%',
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } } 
-                }
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
 
-            // Gráfico de Clientes (Barras)
-            const topClients = Object.entries(clients).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            const top = Object.entries(c).sort((a,b) => b[1]-a[1]).slice(0, 5);
             if(chartBar) chartBar.destroy();
             chartBar = new Chart(document.getElementById('chartBar'), {
                 type: 'bar',
                 data: {
-                    labels: topClients.map(x => x[0].toUpperCase()),
-                    datasets: [{
-                        label: 'Monto Ganado $',
-                        data: topClients.map(x => x[1]),
-                        backgroundColor: '#1e3a8a',
-                        borderRadius: 8
-                    }]
+                    labels: top.map(x => x[0].substring(0,10)),
+                    datasets: [{ data: top.map(x => x[1]), backgroundColor: '#1e3a8a' }]
                 },
-                options: { 
-                    maintainAspectRatio: false, 
-                    scales: { 
-                        y: { beginAtZero: true, grid: { display: false } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
