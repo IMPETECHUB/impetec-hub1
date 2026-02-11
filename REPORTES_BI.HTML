@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>IMPETEC BI - DASHBOARD ESTRATÉGICO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-blue-900 uppercase">Impetec <span class="text-blue-500">BI Analytics</span></h1>
+            <p class="text-slate-500 font-bold text-xs uppercase tracking-widest">Reporte de Desempeño Comercial</p>
+        </div>
+        <div class="flex gap-4">
+            <select id="bi-month" onchange="loadAnalytics()" class="bg-white border-2 border-blue-900 rounded-xl px-4 py-2 font-bold text-blue-900 outline-none"></select>
+            <button onclick="window.print()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-xs uppercase"><i class="fas fa-print mr-2"></i> PDF</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-blue-500">
+            <p class="text-[10px] font-black text-slate-400 uppercase">Ventas Totales (Ganado)</p>
+            <h2 id="kpi-total" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-amber-500">
+            <p class="text-[10px] font-black text-slate-400 uppercase">En Negociación</p>
+            <h2 id="kpi-pipeline" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-green-500">
+            <p class="text-[10px] font-black text-slate-400 uppercase">Tasa de Cierre</p>
+            <h2 id="kpi-rate" class="text-3xl font-black text-slate-800 mt-1">0%</h2>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl shadow-sm border-b-4 border-red-500">
+            <p class="text-[10px] font-black text-slate-400 uppercase">Proyectos Perdidos</p>
+            <h2 id="kpi-lost" class="text-3xl font-black text-slate-800 mt-1">$0.00</h2>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-3xl shadow-sm border">
+            <h3 class="text-sm font-black text-blue-900 uppercase mb-6 flex items-center">
+                <i class="fas fa-chart-pie mr-2"></i> Distribución por Estado
+            </h3>
+            <div class="chart-container">
+                <canvas id="chartPie"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl shadow-sm border">
+            <h3 class="text-sm font-black text-blue-900 uppercase mb-6 flex items-center">
+                <i class="fas fa- crown mr-2"></i> Top 5 Clientes (Monto)
+            </h3>
+            <div class="chart-container">
+                <canvas id="chartBar"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración idéntica a tu index.html
+        const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        let chartPie, chartBar;
+
+        function init() {
+            const ms = document.getElementById('bi-month'), n = new Date();
+            const names = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+            names.forEach((t,i) => { 
+                const o = document.createElement('option'); o.value = i; o.innerText = t; 
+                if(i === n.getMonth()) o.selected = true; ms.appendChild(o); 
+            });
+            loadAnalytics();
+        }
+
+        async function loadAnalytics() {
+            const m = document.getElementById('bi-month').value;
+            const y = new Date().getFullYear();
+            
+            db.ref(`deals/${m}-${y}`).on('value', snap => {
+                const data = snap.val() ? Object.values(snap.val()) : [];
+                processData(data);
+            });
+        }
+
+        function processData(deals) {
+            let stats = { prospecto: 0, cotizado: 0, obra: 0, ganado: 0, perdido: 0 };
+            let clientData = {};
+            let totalGanado = 0, totalPipeline = 0, totalPerdido = 0;
+
+            deals.forEach(d => {
+                const monto = parseFloat(d.monto) || 0;
+                stats[d.status] = (stats[d.status] || 0) + monto;
+
+                if(d.status === 'ganado') {
+                    totalGanado += monto;
+                    clientData[d.cliente] = (clientData[d.cliente] || 0) + monto;
+                } else if(d.status === 'perdido') {
+                    totalPerdido += monto;
+                } else {
+                    totalPipeline += monto;
+                }
+            });
+
+            // Actualizar KPIs
+            document.getElementById('kpi-total').innerText = '$' + totalGanado.toLocaleString();
+            document.getElementById('kpi-pipeline').innerText = '$' + totalPipeline.toLocaleString();
+            document.getElementById('kpi-lost').innerText = '$' + totalPerdido.toLocaleString();
+            
+            const totalIntentos = totalGanado + totalPerdido;
+            const rate = totalIntentos > 0 ? ((totalGanado / totalIntentos) * 100).toFixed(1) : 0;
+            document.getElementById('kpi-rate').innerText = rate + '%';
+
+            updateCharts(stats, clientData);
+        }
+
+        function updateCharts(stats, clients) {
+            // PIE CHART
+            if(chartPie) chartPie.destroy();
+            chartPie = new Chart(document.getElementById('chartPie'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Prospecto', 'Cotizado', 'Obra', 'Ganado', 'Perdido'],
+                    datasets: [{
+                        data: [stats.prospecto, stats.cotizado, stats.obra, stats.ganado, stats.perdido],
+                        backgroundColor: ['#94a3b8', '#f59e0b', '#3b82f6', '#22c55e', '#ef4444']
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // BAR CHART
+            const topClients = Object.entries(clients).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            if(chartBar) chartBar.destroy();
+            chartBar = new Chart(document.getElementById('chartBar'), {
+                type: 'bar',
+                data: {
+                    labels: topClients.map(x => x[0].toUpperCase()),
+                    datasets: [{
+                        label: 'Monto Ganado $',
+                        data: topClients.map(x => x[1]),
+                        backgroundColor: '#004691'
+                    }]
+                },
+                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
