@@ -101,7 +101,9 @@
         <div class="grid grid-cols-7 gap-px bg-slate-200 border-x border-b rounded-b-2xl overflow-hidden" id="cal-render"></div>
     </div>
 
-    <div id="v-bi" class="view-sec hidden"><iframe src="reportes_bi.html"></iframe></div>
+    <div id="v-bi" class="view-sec hidden">
+        <iframe src="reportes_bi.html" id="frame-bi"></iframe>
+    </div>
 
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
@@ -209,15 +211,19 @@
     }
     if(me) document.getElementById('auth-wall').classList.add('hidden');
 
-    // NAVEGACIÓN ACTUALIZADA
+    // NAVEGACIÓN CON RECARGA DE BI INCLUIDA
     function tab(t) {
         document.querySelectorAll('.view-sec').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         document.getElementById('v-'+t).classList.remove('hidden');
         document.getElementById('btn-'+t).classList.add('active');
         if(t === 'cal') renderCal();
-        // Si entramos a BI, refrescamos el iframe para que cargue datos frescos
-        if(t === 'bi') document.querySelector('#v-bi iframe').src = 'REPORTES_BI.html';
+        
+        // ESTO ASEGURA QUE EL BI SE RECARGUE AL ENTRAR A LA PESTAÑA
+        if(t === 'bi') {
+            const frame = document.getElementById('frame-bi');
+            frame.src = "reportes_bi.html";
+        }
     }
 
     function openUserMgmt() {
@@ -366,5 +372,3 @@
 </script>
 </body>
 </html>
-
-
