@@ -2,21 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>IMPETEC HUB PRO - V26 AUTO-REGISTRO</title>
+    <title>IMPETEC HUB PRO - FULL CHAT & SIDEBAR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
         :root { --primary: #004691; --bg: #f8fafc; }
         body { background: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; color: #1e293b; }
-        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; height: 100vh; position: fixed; z-index: 50; }
-        .main { margin-left: 280px; height: 100vh; overflow-y: auto; padding: 40px; }
-        .nav-link { padding: 12px 20px; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 13px; color: #64748b; border-radius: 12px; margin: 4px 15px; transition: 0.2s; cursor: pointer; border: none; background: none; width: calc(100% - 30px); text-align: left; }
-        .nav-link.active { background: #004691 !important; color: white !important; }
+
+        /* Sidebar Abatible */
+        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; height: 100vh; position: fixed; z-index: 50; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar.collapsed { width: 80px; }
+        .main { margin-left: 280px; height: 100vh; overflow-y: auto; padding: 30px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar.collapsed + .main { margin-left: 80px; }
+
+        .nav-link { padding: 12px 20px; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 13px; color: #64748b; border-radius: 12px; margin: 4px 12px; transition: 0.2s; cursor: pointer; white-space: nowrap; overflow: hidden; width: calc(100% - 24px); border: none; background: none; text-align: left; }
+        .sidebar.collapsed .nav-link { padding: 12px 0; justify-content: center; width: 50px; margin: 4px auto; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .logo-text, .sidebar.collapsed .section-title { display: none; }
+        .nav-link.active { background: var(--primary) !important; color: white !important; }
+
+        .toggle-btn { position: absolute; top: 25px; right: -15px; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 4px solid var(--bg); z-index: 60; }
+
+        /* Estilos CRM */
         .kanban-col { width: 310px; flex-shrink: 0; background: #f1f5f9; border-radius: 20px; padding: 15px; min-height: 70vh; border: 1px solid #e2e8f0; }
         .card-deal { background: white; padding: 16px; border-radius: 15px; margin-bottom: 12px; border-bottom: 4px solid #cbd5e1; cursor: pointer; position: relative; }
-        .cal-day { min-height: 110px; background: white; border: 1px solid #f1f5f9; padding: 8px; cursor: pointer; overflow-y: auto; }
+        
+        /* Chat UI Completo */
         .chat-float { position: fixed; bottom: 20px; right: 20px; width: 400px; height: 600px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 1px solid #e2e8f0; display: flex; flex-direction: column; z-index: 100; transition: 0.3s; }
         .chat-float.minimized { height: 50px; overflow: hidden; }
         .chat-tab { padding: 8px 12px; font-size: 9px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid transparent; color: #94a3b8; cursor: pointer; white-space: nowrap; }
@@ -35,39 +48,34 @@
             <input type="text" id="u-in" placeholder="Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
             <input type="password" id="p-in" placeholder="Contraseña" class="w-full border p-4 rounded-xl mb-8 text-center outline-none">
             <button onclick="login()" class="w-full bg-blue-900 text-white p-4 rounded-xl font-bold uppercase tracking-widest mb-4">Entrar</button>
-            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(true)">¿No tienes cuenta? Regístrate aquí</p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(true)">Registrarse</p>
         </div>
         <div id="reg-form" class="hidden">
-            <h3 class="text-sm font-black text-blue-600 mb-4 uppercase">Crear Nueva Cuenta</h3>
             <input type="text" id="u-reg" placeholder="Nuevo Usuario" class="w-full border p-4 rounded-xl mb-4 text-center uppercase font-bold outline-none">
-            <input type="password" id="p-reg" placeholder="Elegir Contraseña" class="w-full border p-4 rounded-xl mb-6 text-center outline-none">
+            <input type="password" id="p-reg" placeholder="Password" class="w-full border p-4 rounded-xl mb-6 text-center outline-none">
             <button onclick="selfRegister()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold uppercase tracking-widest mb-4">Crear Cuenta</button>
-            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(false)">Volver al Login</p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase cursor-pointer hover:text-blue-600" onclick="toggleAuth(false)">Volver</p>
         </div>
     </div>
 </div>
 
-<aside class="sidebar flex flex-col">
-    <div class="p-8 text-2xl font-black text-blue-900 italic uppercase">IMPETEC PRO</div>
+<aside class="sidebar flex flex-col" id="sidebar">
+    <div class="toggle-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left" id="toggle-icon"></i></div>
+    <div class="p-8 text-2xl font-black text-blue-900 italic uppercase overflow-hidden"><span class="logo-text">IMPETEC PRO</span></div>
     <nav class="flex-1 overflow-y-auto">
-        <button onclick="tab('crm')" class="nav-link active" id="btn-crm"><i class="fas fa-layer-group"></i> Pipeline Flow</button>
-        <button onclick="tab('cal')" class="nav-link" id="btn-cal"><i class="fas fa-calendar-alt"></i> Agenda Operativa</button>
-        
-        <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> Analytics BI</button>
-        
-        <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos y Finanzas</div>
-        <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
-        <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
-        <button onclick="tab('cot')" class="nav-link" id="btn-cot"><i class="fas fa-calculator"></i> Cotizador</button>
-        <button onclick="tab('os')" class="nav-link" id="btn-os"><i class="fas fa-tools"></i> Orden Servicio</button>
-        <button onclick="tab('rem')" class="nav-link" id="btn-rem"><i class="fas fa-file-invoice"></i> Remisiones</button>
-        <button onclick="tab('edc')" class="nav-link" id="btn-edc"><i class="fas fa-wallet"></i> Edo. Cuenta</button>
-        <button id="admin-user-btn" onclick="openUserMgmt()" class="nav-link hidden text-orange-600 mt-4 border-t pt-4"><i class="fas fa-users-cog"></i> Gestión Usuarios</button>
+        <button onclick="tab('crm')" class="nav-link active" id="btn-crm"><i class="fas fa-layer-group"></i> <span class="nav-text">Pipeline Flow</span></button>
+        <button onclick="tab('cal')" class="nav-link" id="btn-cal"><i class="fas fa-calendar-alt"></i> <span class="nav-text">Agenda Operativa</span></button>
+        <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> <span class="nav-text">Analytics BI</span></button>
+        <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest section-title">Documentos</div>
+        <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> <span class="nav-text">Entregables</span></button>
+        <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> <span class="nav-text">Levantamiento</span></button>
+        <button onclick="tab('cot')" class="nav-link" id="btn-cot"><i class="fas fa-calculator"></i> <span class="nav-text">Cotizador</span></button>
+        <button onclick="tab('os')" class="nav-link" id="btn-os"><i class="fas fa-tools"></i> <span class="nav-text">Orden Servicio</span></button>
+        <button onclick="tab('rem')" class="nav-link" id="btn-rem"><i class="fas fa-file-invoice"></i> <span class="nav-text">Remisiones</span></button>
+        <button onclick="tab('edc')" class="nav-link" id="btn-edc"><i class="fas fa-wallet"></i> <span class="nav-text">Edo. Cuenta</span></button>
+        <button id="admin-user-btn" onclick="openUserMgmt()" class="nav-link hidden text-orange-600 mt-4 border-t pt-4"><i class="fas fa-users-cog"></i> <span class="nav-text">Usuarios</span></button>
     </nav>
-    <div class="p-6 border-t">
-        <select id="m-sel" onchange="initApp()" class="w-full text-xs font-bold text-blue-600 mb-4 outline-none"></select>
-        <button onclick="logout()" class="text-red-500 text-[10px] font-bold uppercase">Cerrar Sesión</button>
-    </div>
+    <div class="p-6 border-t"><button onclick="logout()" class="w-full bg-red-50 text-red-500 py-2 rounded-xl text-[10px] font-bold uppercase"><i class="fas fa-power-off"></i> <span class="nav-text ml-2">Salir</span></button></div>
 </aside>
 
 <main class="main">
@@ -89,22 +97,8 @@
             <div class="kanban-col opacity-60" id="st-perdido" ondrop="drop(event, 'perdido')" ondragover="allow(event)"></div>
         </div>
     </div>
-
-    <div id="v-cal" class="view-sec hidden">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold text-slate-800">Agenda <span class="text-blue-600">Operativa</span></h2>
-            <div id="cal-month-label" class="font-black text-blue-900 uppercase tracking-widest text-sm bg-white px-4 py-2 rounded-xl border">---</div>
-        </div>
-        <div class="grid grid-cols-7 gap-px bg-slate-200 border rounded-t-2xl overflow-hidden">
-            <div class="bg-white p-3 text-center text-[10px] font-black text-slate-400">LUN</div><div class="bg-white p-3 text-center text-[10px] font-black text-slate-400">MAR</div><div class="bg-white p-3 text-center text-[10px] font-black text-slate-400">MIE</div><div class="bg-white p-3 text-center text-[10px] font-black text-slate-400">JUE</div><div class="bg-white p-3 text-center text-[10px] font-black text-slate-400">VIE</div><div class="bg-white p-3 text-center text-[10px] font-black text-blue-400">SAB</div><div class="bg-white p-3 text-center text-[10px] font-black text-red-400">DOM</div>
-        </div>
-        <div class="grid grid-cols-7 gap-px bg-slate-200 border-x border-b rounded-b-2xl overflow-hidden" id="cal-render"></div>
-    </div>
-
-    <div id="v-bi" class="view-sec hidden">
-        <iframe src="reportes_bi.html" id="frame-bi"></iframe>
-    </div>
-
+    <div id="v-cal" class="view-sec hidden"><iframe src="AGENDA.HTML"></iframe></div>
+    <div id="v-bi" class="view-sec hidden"><iframe src="REPORTES_BI.html"></iframe></div>
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
     <div id="v-cot" class="view-sec hidden"><iframe src="MACHOTE DE COTIZACION.html"></iframe></div>
@@ -112,14 +106,6 @@
     <div id="v-rem" class="view-sec hidden"><iframe src="REMISIONES-NDC IMPETEC.HTML"></iframe></div>
     <div id="v-edc" class="view-sec hidden"><iframe src="ESTADO DE CUENTA.html"></iframe></div>
 </main>
-
-<div id="m-users" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-white p-8 rounded-3xl w-96 shadow-2xl">
-        <h3 class="font-bold mb-4 uppercase text-center text-blue-900">Usuarios Registrados</h3>
-        <div id="user-list-admin" class="mt-2 max-h-60 overflow-y-auto"></div>
-        <button onclick="document.getElementById('m-users').classList.add('hidden')" class="w-full mt-6 bg-slate-100 p-3 rounded-xl font-bold uppercase text-[10px]">Cerrar</button>
-    </div>
-</div>
 
 <div id="m-deal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
     <div class="bg-white p-10 rounded-3xl w-96 shadow-2xl">
@@ -132,44 +118,27 @@
     </div>
 </div>
 
-<div id="m-cal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-white p-8 rounded-3xl w-80 shadow-2xl text-center">
-        <input type="hidden" id="ev-id">
-        <h3 class="font-bold mb-4 uppercase text-blue-900">Actividad</h3>
-        <input type="time" id="ev-time" class="w-full border p-3 rounded-xl mb-4 text-center font-bold text-xl outline-none">
-        <textarea id="ev-txt" class="w-full border p-3 rounded-xl mb-6 h-24 text-sm outline-none" placeholder="Descripción..."></textarea>
-        <div class="flex gap-2">
-            <button onclick="saveEvent()" class="flex-1 bg-blue-600 text-white p-3 rounded-xl font-bold uppercase text-xs">Guardar</button>
-            <button onclick="deleteEvent()" id="btn-del-ev" class="bg-red-50 text-red-500 px-4 rounded-xl hidden"><i class="fas fa-trash"></i></button>
-        </div>
-        <button onclick="document.getElementById('m-cal').classList.add('hidden')" class="mt-4 text-slate-400 text-[10px] font-bold uppercase">Cerrar</button>
-    </div>
-</div>
-
 <div id="chat-ui" class="chat-float minimized">
     <div class="bg-blue-900 p-4 text-white flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('minimized')">
-        <span class="text-[10px] font-bold uppercase tracking-widest">Mensajería Impetec</span>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Chat Impetec</span>
         <i class="fas fa-chevron-up"></i>
     </div>
-    <div class="flex bg-slate-100 border-b overflow-x-auto scrollbar-hide">
+    <div class="flex bg-slate-100 border-b overflow-x-auto">
         <div onclick="switchChat('general')" id="tab-general" class="chat-tab active">General</div>
         <div onclick="switchChat('ventas')" id="tab-ventas" class="chat-tab">Ventas</div>
         <div onclick="switchChat('instalaciones')" id="tab-instalaciones" class="chat-tab">Instal.</div>
         <div onclick="switchChat('levantamientos')" id="tab-levantamientos" class="chat-tab">Levant.</div>
     </div>
     <div class="flex bg-white border-b overflow-x-auto" id="user-tabs-container"></div>
-    <div id="chat-header" class="bg-blue-50 px-4 py-1 text-[9px] font-black text-blue-600 border-b uppercase italic">SALA: GENERAL</div>
     <div id="chat-msgs" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-[10px]"></div>
-    <div class="p-3 border-t flex flex-col gap-2 bg-white">
-        <div id="file-indicator" class="hidden text-[8px] bg-amber-50 text-amber-600 p-1 rounded font-bold border border-amber-200 flex justify-between items-center">
+    <div class="p-3 border-t bg-white flex flex-col gap-2">
+        <div id="file-indicator" class="hidden text-[8px] bg-amber-50 text-amber-600 p-1 rounded font-bold border border-amber-200 flex justify-between">
             <span id="file-name-display">Archivo listo</span>
-            <button onclick="clearFile()" class="text-red-500 ml-2"><i class="fas fa-times"></i></button>
+            <button onclick="clearFile()" class="text-red-500"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex gap-2">
-            <label class="cursor-pointer bg-slate-100 text-slate-500 px-3 flex items-center justify-center rounded-lg">
-                <i class="fas fa-paperclip"></i>
-                <input type="file" id="chat-file" class="hidden" onchange="previewFile(this)">
-            </label>
+            <input type="file" id="chat-file" class="hidden" onchange="previewFile(this)">
+            <button onclick="document.getElementById('chat-file').click()" class="text-slate-400 px-2"><i class="fas fa-paperclip"></i></button>
             <input type="text" id="chat-in" class="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Escribir...">
             <button onclick="sendMsg()" class="bg-blue-600 text-white px-3 rounded-lg"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -178,142 +147,69 @@
 
 <script>
     const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let me = localStorage.getItem('imp_user'), deals = [], curM, curY, selD, lastMsgCount = {};
-    let currentRoom = 'general', isPrivate = false, tempFileData = null;
+    let me = localStorage.getItem('imp_user'), deals = [], lastMsgCount = {}, currentRoom = 'general', isPrivate = false, tempFileData = null;
 
-    function playNotif() { document.getElementById('notif-snd').play().catch(()=>{}); }
-
-    function toggleAuth(showReg) {
-        document.getElementById('login-form').classList.toggle('hidden', showReg);
-        document.getElementById('reg-form').classList.toggle('hidden', !showReg);
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const icon = document.getElementById('toggle-icon');
+        sidebar.classList.toggle('collapsed');
+        icon.classList.replace(sidebar.classList.contains('collapsed')?'fa-chevron-left':'fa-chevron-right', sidebar.classList.contains('collapsed')?'fa-chevron-right':'fa-chevron-left');
     }
 
-    async function selfRegister() {
-        const u = document.getElementById('u-reg').value.toLowerCase().trim();
-        const p = document.getElementById('p-reg').value;
-        if(u.length < 3 || p.length < 4) return alert("Usuario min. 3 carácteres, Password min. 4");
-        const check = await db.ref(`users/${u}`).once('value');
-        if(check.exists()) return alert("El usuario ya existe");
-        db.ref(`users/${u}`).set({ pass: p, role: 'user' }).then(() => {
-            alert("¡Cuenta creada! Ya puedes iniciar sesión");
-            toggleAuth(false);
-        });
-    }
-
-    async function login() {
-        const u = document.getElementById('u-in').value.toLowerCase().trim(), p = document.getElementById('p-in').value;
-        if(u === 'admin' && p === '1234') { me = u; localStorage.setItem('imp_user', u); location.reload(); return; }
-        const s = await db.ref(`users/${u}`).once('value');
-        if(s.exists() && s.val().pass === p) { me = u; localStorage.setItem('imp_user', u); location.reload(); }
-        else alert("Acceso denegado");
-    }
-    if(me) document.getElementById('auth-wall').classList.add('hidden');
-
-    // NAVEGACIÓN CON RECARGA DE BI INCLUIDA
     function tab(t) {
         document.querySelectorAll('.view-sec').forEach(d => d.classList.add('hidden'));
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         document.getElementById('v-'+t).classList.remove('hidden');
         document.getElementById('btn-'+t).classList.add('active');
-        if(t === 'cal') renderCal();
-        
-        // ESTO ASEGURA QUE EL BI SE RECARGUE AL ENTRAR A LA PESTAÑA
-        if(t === 'bi') {
-            const frame = document.getElementById('frame-bi');
-            frame.src = "reportes_bi.html";
-        }
+        const frame = document.querySelector(`#v-${t} iframe`);
+        if(frame) frame.src = frame.src;
     }
 
-    function openUserMgmt() {
-        document.getElementById('m-users').classList.remove('hidden');
-        const list = document.getElementById('user-list-admin');
-        db.ref('users').on('value', snap => {
-            list.innerHTML = '';
-            snap.forEach(s => {
-                list.innerHTML += `<div class="flex justify-between p-3 border-b text-[11px] font-bold uppercase">
-                    <span>${s.key}</span>
-                    <button onclick="db.ref('users/${s.key}').remove()" class="text-red-500"><i class="fas fa-trash"></i></button>
-                </div>`;
-            });
-        });
+    function toggleAuth(reg) { document.getElementById('login-form').classList.toggle('hidden', reg); document.getElementById('reg-form').classList.toggle('hidden', !reg); }
+    async function login() {
+        const u = document.getElementById('u-in').value.toLowerCase().trim(), p = document.getElementById('p-in').value;
+        const s = await db.ref(`users/${u}`).once('value');
+        if(s.exists() && s.val().pass === p) { me = u; localStorage.setItem('imp_user', u); location.reload(); } else alert("Acceso denegado");
+    }
+    async function selfRegister() {
+        const u = document.getElementById('u-reg').value.toLowerCase().trim(), p = document.getElementById('p-reg').value;
+        db.ref(`users/${u}`).set({ pass: p, role: 'user' }).then(() => { alert("Cuenta creada"); toggleAuth(false); });
     }
 
-    function renderCal() {
-        const grid = document.getElementById('cal-render'); grid.innerHTML = '';
-        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-        document.getElementById('cal-month-label').innerText = months[curM] + ' ' + curY;
-        const firstDay = new Date(curY, curM, 1).getDay(), offset = firstDay === 0 ? 6 : firstDay - 1, daysInMonth = new Date(curY, parseInt(curM) + 1, 0).getDate();
-        for(let i=0; i<offset; i++) grid.innerHTML += `<div class="bg-slate-50/50"></div>`;
-        db.ref(`agenda/${curM}-${curY}`).on('value', snap => {
-            const evs = snap.val() || {}; grid.querySelectorAll('.cal-day').forEach(el => el.remove());
-            for(let i=1; i<=daysInMonth; i++) {
-                const cell = document.createElement('div'); cell.className = 'cal-day';
-                cell.onclick = () => { selD = i; document.getElementById('ev-id').value = ''; document.getElementById('ev-txt').value = ''; document.getElementById('ev-time').value = '09:00'; document.getElementById('btn-del-ev').classList.add('hidden'); document.getElementById('m-cal').classList.remove('hidden'); };
-                let h = `<span class="text-[10px] font-bold text-slate-400">${i}</span><div class="mt-1 space-y-1">`;
-                if(evs['d'+i]) Object.entries(evs['d'+i]).forEach(([id, ev]) => { 
-                    h += `<div onclick="event.stopPropagation(); editEv('${id}', '${ev.txt}', '${ev.time}', ${i})" class="bg-blue-600 text-white text-[7px] p-1 rounded font-bold truncate">[${ev.u || '?'}] ${ev.time} ${ev.txt}</div>`; 
-                });
-                cell.innerHTML = h + '</div>'; grid.appendChild(cell);
-            }
-        });
-    }
-
-    function saveEvent() {
-        const id = document.getElementById('ev-id').value;
-        const data = { txt: document.getElementById('ev-txt').value, time: document.getElementById('ev-time').value, u: me };
-        if(!data.txt) return alert("Escribe la actividad");
-        if(id) db.ref(`agenda/${curM}-${curY}/d${selD}/${id}`).update(data); 
-        else db.ref(`agenda/${curM}-${curY}/d${selD}`).push(data);
-        document.getElementById('m-cal').classList.add('hidden');
-    }
-
-    function editEv(id, txt, time, day) {
-        selD = day; document.getElementById('ev-id').value = id; document.getElementById('ev-txt').value = txt; document.getElementById('ev-time').value = time || '09:00'; document.getElementById('btn-del-ev').classList.remove('hidden'); document.getElementById('m-cal').classList.remove('hidden');
-    }
-
-    function deleteEvent() { if(confirm('¿Borrar?')) { db.ref(`agenda/${curM}-${curY}/d${selD}/${document.getElementById('ev-id').value}`).remove(); document.getElementById('m-cal').classList.add('hidden'); } }
-
+    // Pipeline Logic
     function loadDeals() {
-        db.ref(`deals/${curM}-${curY}`).on('value', snap => {
+        const n = new Date(); const path = `${n.getMonth()}-${n.getFullYear()}`;
+        db.ref(`deals/${path}`).on('value', snap => {
             deals = snap.val() ? Object.values(snap.val()) : [];
-            updateStats();
-            ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => document.getElementById('st-'+s).innerHTML = `<p class="text-[9px] font-black text-slate-400 mb-4 uppercase text-center">${s}</p>`);
+            ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => {
+                document.getElementById('st-'+s).innerHTML = `<p class="text-[9px] font-black text-slate-400 mb-4 uppercase text-center">${s}</p>`;
+            });
             deals.forEach(d => {
                 const card = document.createElement('div'); card.className = "card-deal"; card.draggable = true;
                 card.ondragstart = (e) => e.dataTransfer.setData("text", d.id); card.onclick = () => openDeal(d.id);
-                card.innerHTML = `<button onclick="event.stopPropagation(); deleteDeal('${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt text-[8px]"></i></button><div class="font-bold text-slate-700 text-xs truncate uppercase">${d.cliente}</div><div class="text-md font-black text-slate-900 mt-1">$${(d.monto||0).toLocaleString()}</div><div class="text-[7px] text-blue-500 font-bold uppercase mt-2">POR: ${d.by || 'S/N'}</div>`;
+                card.innerHTML = `<button onclick="event.stopPropagation(); deleteDeal('${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt text-[8px]"></i></button><div class="font-bold text-slate-700 text-xs truncate uppercase">${d.cliente}</div><div class="text-md font-black text-slate-900 mt-1">$${(d.monto||0).toLocaleString()}</div><div class="text-[7px] text-blue-500 font-bold mt-2">POR: ${d.by}</div>`;
                 document.getElementById('st-'+d.status).appendChild(card);
             });
+            updateStats();
         });
     }
-
-    function openDeal(id = null) {
-        const d = id ? deals.find(x => x.id === id) : null;
-        document.getElementById('f-id').value = id || ''; document.getElementById('f-st').value = d ? d.status : 'prospecto';
-        document.getElementById('f-cli').value = d ? d.cliente : ''; document.getElementById('f-mon').value = d ? d.monto : '';
-        document.getElementById('m-deal').classList.remove('hidden');
-    }
-
     function saveDeal() {
+        const n = new Date(); const path = `${n.getMonth()}-${n.getFullYear()}`;
         const id = document.getElementById('f-id').value || 'ID-' + Date.now();
-        const data = { id, cliente: document.getElementById('f-cli').value, monto: parseFloat(document.getElementById('f-mon').value)||0, status: document.getElementById('f-st').value || 'prospecto', by: me };
-        db.ref(`deals/${curM}-${curY}/${id}`).set(data).then(() => document.getElementById('m-deal').classList.add('hidden'));
+        db.ref(`deals/${path}/${id}`).set({ id, cliente: document.getElementById('f-cli').value, monto: parseFloat(document.getElementById('f-mon').value)||0, status: document.getElementById('f-st').value || 'prospecto', by: me }).then(() => document.getElementById('m-deal').classList.add('hidden'));
     }
-
-    function deleteDeal(id) { if(confirm('¿Borrar?')) db.ref(`deals/${curM}-${curY}/${id}`).remove(); }
-    function drop(e, st) { e.preventDefault(); const id = e.dataTransfer.getData("text"); if(id) db.ref(`deals/${curM}-${curY}/${id}`).update({ status: st, by: me }); }
+    function deleteDeal(id) { if(confirm('¿Borrar?')) { const n = new Date(); db.ref(`deals/${n.getMonth()}-${n.getFullYear()}/${id}`).remove(); } }
+    function drop(e, st) { e.preventDefault(); const n = new Date(); const id = e.dataTransfer.getData("text"); if(id) db.ref(`deals/${n.getMonth()}-${n.getFullYear()}/${id}`).update({ status: st, by: me }); }
     function allow(e) { e.preventDefault(); }
-
     function updateStats() {
         let e = 0, g = 0, p = 0;
-        deals.forEach(d => { const m = parseFloat(d.monto) || 0; if(d.status === 'ganado') g += m; else if(d.status === 'perdido') p += m; else e += m; });
-        document.getElementById('stat-espera').innerText = '$' + e.toLocaleString();
-        document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString();
-        document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
+        deals.forEach(d => { const m = parseFloat(d.monto)||0; if(d.status === 'ganado') g += m; else if(d.status === 'perdido') p += m; else e += m; });
+        document.getElementById('stat-espera').innerText = '$' + e.toLocaleString(); document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString(); document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
     }
 
+    // Chat Logic Completo
     function loadUsers() {
         db.ref('users').once('value', snap => {
             const cont = document.getElementById('user-tabs-container'); cont.innerHTML = '';
@@ -321,24 +217,21 @@
                 if(s.key === me) return;
                 const path = [me, s.key].sort().join('_');
                 const t = document.createElement('div'); t.id = 'tab-priv-'+path; t.className = "chat-tab border-r px-4"; t.innerText = s.key;
-                t.onclick = () => switchChat(path, true, s.key); cont.appendChild(t);
+                t.onclick = () => switchChat(path, true); cont.appendChild(t);
             });
         });
     }
 
-    function previewFile(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { tempFileData = { base64: e.target.result, name: input.files[0].name, type: input.files[0].type }; document.getElementById('file-indicator').classList.remove('hidden'); document.getElementById('file-name-display').innerText = "LISTO: " + input.files[0].name; }; reader.readAsDataURL(input.files[0]); } }
-    function clearFile() { tempFileData = null; document.getElementById('chat-file').value = ""; document.getElementById('file-indicator').classList.add('hidden'); }
-    function switchChat(room, priv = false, name = "") {
+    function switchChat(room, priv = false) {
         currentRoom = room; isPrivate = priv;
         document.querySelectorAll('.chat-tab').forEach(el => el.classList.remove('active'));
-        if(!priv) { document.getElementById('tab-'+room).classList.add('active'); document.getElementById('chat-header').innerText = "SALA: " + room; }
-        else { document.getElementById('tab-priv-'+room).classList.add('active'); document.getElementById('chat-header').innerText = "CON: " + name; }
+        const t = document.getElementById(priv ? 'tab-priv-'+room : 'tab-'+room); if(t) t.classList.add('active');
         loadMessages();
     }
+
     function loadMessages() {
         const path = isPrivate ? `private_chats/${currentRoom}` : `chats/${currentRoom}`;
-        db.ref(path).off(); 
-        db.ref(path).limitToLast(20).on('value', snap => {
+        db.ref(path).off(); db.ref(path).limitToLast(20).on('value', snap => {
             const a = document.getElementById('chat-msgs'); a.innerHTML = '';
             let count = 0;
             snap.forEach(s => { 
@@ -347,27 +240,16 @@
                 a.innerHTML += `<div class="flex ${isMe?'justify-end':'justify-start'}"><div class="${isMe?'bg-blue-600 text-white':'bg-white border'} p-2 rounded-lg max-w-[85%]"><b>${d.u}:</b> ${d.m} ${fHtml}</div></div>`; 
             });
             a.scrollTop = a.scrollHeight;
-            if(lastMsgCount[path] !== undefined && count > lastMsgCount[path]) playNotif();
+            if(lastMsgCount[path] && count > lastMsgCount[path]) document.getElementById('notif-snd').play().catch(()=>{});
             lastMsgCount[path] = count;
         });
     }
-    function sendMsg() { const i = document.getElementById('chat-in'); if(!i.value.trim() && !tempFileData) return; const path = isPrivate ? `private_chats/${currentRoom}` : `chats/${currentRoom}`; db.ref(path).push({ u: me, m: i.value, file: tempFileData || null, ts: Date.now() }); i.value = ''; clearFile(); playNotif(); }
 
-    function initApp() {
-        curM = document.getElementById('m-sel').value; curY = new Date().getFullYear();
-        if(me) { 
-            loadDeals(); loadMessages(); loadUsers(); renderCal(); 
-            if(me === 'admin') document.getElementById('admin-user-btn').classList.remove('hidden');
-        }
-    }
+    function previewFile(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { tempFileData = { base64: e.target.result, name: input.files[0].name }; document.getElementById('file-indicator').classList.remove('hidden'); document.getElementById('file-name-display').innerText = input.files[0].name; }; reader.readAsDataURL(input.files[0]); } }
+    function clearFile() { tempFileData = null; document.getElementById('chat-file').value = ""; document.getElementById('file-indicator').classList.add('hidden'); }
+    function sendMsg() { const i = document.getElementById('chat-in'); if(!i.value.trim() && !tempFileData) return; const path = isPrivate ? `private_chats/${currentRoom}` : `chats/${currentRoom}`; db.ref(path).push({ u: me, m: i.value, file: tempFileData, ts: Date.now() }); i.value = ''; clearFile(); }
 
-    window.onload = () => {
-        const ms = document.getElementById('m-sel'), n = new Date();
-        ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"].forEach((t,i)=>{ 
-            const o=document.createElement('option'); o.value=i; o.innerText=t; if(i===n.getMonth()) o.selected=true; ms.appendChild(o); 
-        });
-        initApp();
-    };
+    window.onload = () => { if(me) { document.getElementById('auth-wall').classList.add('hidden'); loadDeals(); loadMessages(); loadUsers(); if(me === 'admin') document.getElementById('admin-user-btn').classList.remove('hidden'); } }
     function logout() { localStorage.clear(); location.reload(); }
 </script>
 </body>
