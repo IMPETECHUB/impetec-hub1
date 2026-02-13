@@ -98,6 +98,7 @@
         <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> Analytics BI</button>
         
         <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos y Finanzas</div>
+        <button onclick="tab('inv')" class="nav-link" id="btn-inv"><i class="fas fa-boxes"></i> Inventario Central</button>
         <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
         <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
         <button onclick="tab('cot')" class="nav-link" id="btn-cot"><i class="fas fa-calculator"></i> Cotizador</button>
@@ -134,6 +135,7 @@
 
     <div id="v-cal" class="view-sec hidden"><iframe src="AGENDA.HTML"></iframe></div>
     <div id="v-bi" class="view-sec hidden"><iframe src="reportes.html"></iframe></div>
+    <div id="v-inv" class="view-sec hidden"><iframe src="inventario.html"></iframe></div>
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
     <div id="v-cot" class="view-sec hidden"><iframe src="MACHOTE DE COTIZACION.html"></iframe></div>
@@ -237,6 +239,7 @@
         // REFRESCAR IFRAMES CON NOMBRES CORRECTOS
         if(t === 'cal') document.querySelector('#v-cal iframe').src = 'AGENDA.HTML';
         if(t === 'bi') document.querySelector('#v-bi iframe').src = 'reportes.html';
+        if(t === 'inv') document.querySelector('#v-inv iframe').src = 'inventario.html';
     }
 
     function openUserMgmt() {
