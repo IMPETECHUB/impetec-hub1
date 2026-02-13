@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>IMPETEC - Inventario con Usuarios Firebase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; color: #1e293b; }
+        .table-container { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; }
+        th { background: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; padding: 15px; border-bottom: 1px solid #e2e8f0; }
+        .btn-qty { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-plus { background: #dcfce7; color: #16a34a; }
+        .btn-plus:hover { background: #16a34a; color: white; }
+        .btn-minus { background: #fee2e2; color: #dc2626; }
+        .btn-minus:hover { background: #dc2626; color: white; }
+        .user-tag { background: #004691; color: white; padding: 3px 10px; border-radius: 20px; font-size: 9px; font-weight: 900; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .low-stock { background: #fef2f2; color: #ef4444; padding: 2px 8px; border-radius: 6px; border: 1px solid #fee2e2; }
+    </style>
+</head>
+<body>
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 uppercase italic">Inventario <span class="text-blue-600 italic">Central</span></h1>
+            <div id="active-user-display" class="text-[10px] font-bold text-slate-400 mt-1 uppercase"></div>
+        </div>
+        <button onclick="openModal()" class="bg-blue-900 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] shadow-lg">
+            + Nuevo Ítem
+        </button>
+    </div>
+
+    <div class="table-container shadow-sm overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr>
+                    <th>Producto / SKU</th>
+                    <th class="text-center">Existencia</th>
+                    <th>Último Responsable</th>
+                    <th class="text-right">Precio</th>
+                    <th class="text-right text-slate-300 italic px-4 text-[8px]">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-body" class="text-sm"></tbody>
+        </table>
+    </div>
+
+    <div id="modal-item" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl">
+            <h3 class="font-black mb-6 uppercase text-blue-900 text-center">Registro de Producto</h3>
+            <input type="hidden" id="f-id">
+            <div class="space-y-4">
+                <input type="text" id="f-code" placeholder="SKU / CÓDIGO" class="w-full p-3 rounded-xl bg-slate-50 border font-bold uppercase outline-none focus:border-blue-500">
+                <input type="text" id="f-name" placeholder="NOMBRE DEL ARTÍCULO" class="w-full p-3 rounded-xl bg-slate-50 border font-bold outline-none focus:border-blue-500">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="f-stock" placeholder="CANTIDAD" class="w-full p-3 rounded-xl bg-slate-50 border font-bold outline-none focus:border-blue-500">
+                    <input type="number" id="f-price" placeholder="PRECIO $" class="w-full p-3 rounded-xl bg-slate-50 border font-bold text-blue-600 outline-none focus:border-blue-500">
+                </div>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold uppercase text-[10px]">Cerrar</button>
+                <button onclick="saveItem()" class="flex-1 bg-blue-900 text-white p-3 rounded-xl font-bold uppercase text-[10px]">Guardar en DB</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración idéntica a tu Firebase
+        const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Obtener usuario activo sincronizado con tu rama 'users'
+        let currentUser = localStorage.getItem('imp_user') || 'Admin';
+
+        // Mostrar usuario en la parte superior para confirmación
+        document.getElementById('active-user-display').innerText = `Operador: ${currentUser}`;
+
+        function openModal() {
+            document.getElementById('modal-item').classList.remove('hidden');
+            document.getElementById('f-id').value = "";
+        }
+        function closeModal() { document.getElementById('modal-item').classList.add('hidden'); }
+
+        // AJUSTE RÁPIDO CON RASTREO (Usa los usuarios de tu Firebase)
+        function adjustQty(id, delta) {
+            const now = new Date().toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+
+            db.ref('inventario/' + id).transaction(item => {
+                if (item) {
+                    const newQty = (item.stock || 0) + delta;
+                    item.stock = newQty < 0 ? 0 : newQty;
+                    item.lastUser = currentUser; // Aquí se guarda el usuario que inició sesión
+                    item.lastDate = now;
+                }
+                return item;
+            });
+        }
+
+        function saveItem() {
+            const id = document.getElementById('f-id').value || 'SKU-' + Date.now();
+            const now = new Date().toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+
+            db.ref('inventario/' + id).update({
+                id,
+                code: document.getElementById('f-code').value.toUpperCase(),
+                name: document.getElementById('f-name').value,
+                stock: parseInt(document.getElementById('f-stock').value) || 0,
+                price: parseFloat(document.getElementById('f-price').value) || 0,
+                lastUser: currentUser,
+                lastDate: now
+            }).then(() => closeModal());
+        }
+
+        // RENDERIZADO DE TABLA
+        db.ref('inventario').on('value', snap => {
+            const body = document.getElementById('inventory-body');
+            body.innerHTML = '';
+            snap.forEach(child => {
+                const d = child.val();
+                body.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-4">
+                            <div class="font-black text-slate-700 uppercase text-xs leading-tight">${d.name}</div>
+                            <div class="text-[9px] text-blue-500 font-mono font-bold mt-1">${d.code}</div>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center justify-center gap-4">
+                                <button onclick="adjustQty('${d.id}', -1)" class="btn-qty btn-minus shadow-sm"><i class="fas fa-minus"></i></button>
+                                <span class="font-black text-slate-800 w-8 text-center text-base">${d.stock}</span>
+                                <button onclick="adjustQty('${d.id}', 1)" class="btn-qty btn-plus shadow-sm"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <div class="user-tag"><i class="fas fa-id-badge"></i> ${d.lastUser || 'S/N'}</div>
+                            <div class="text-[8px] text-slate-400 mt-1 font-bold italic block">${d.lastDate || ''}</div>
+                        </td>
+                        <td class="p-4 text-right font-black text-slate-900">$${(d.price || 0).toLocaleString()}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="db.ref('inventario/${d.id}').remove()" class="text-slate-200 hover:text-red-500 transition px-2"><i class="fas fa-trash-alt text-xs"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
