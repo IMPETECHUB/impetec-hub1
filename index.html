@@ -102,6 +102,7 @@
         <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
         <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
         <button onclick="tab('cot')" class="nav-link" id="btn-cot"><i class="fas fa-calculator"></i> Cotizador</button>
+        <button onclick="tab('odc')" class="nav-link" id="btn-odc"><i class="fas fa-shopping-cart"></i> Orden de Compra</button>
         <button onclick="tab('os')" class="nav-link" id="btn-os"><i class="fas fa-tools"></i> Orden Servicio</button>
         <button onclick="tab('rem')" class="nav-link" id="btn-rem"><i class="fas fa-file-invoice"></i> Remisiones</button>
         <button onclick="tab('edc')" class="nav-link" id="btn-edc"><i class="fas fa-wallet"></i> Edo. Cuenta</button>
@@ -139,6 +140,7 @@
     <div id="v-ent" class="view-sec hidden"><iframe src="ENTREGABLE_TECNICO.HTML"></iframe></div>
     <div id="v-lev" class="view-sec hidden"><iframe src="ORDEN DE LEVANTAMIENTO.html"></iframe></div>
     <div id="v-cot" class="view-sec hidden"><iframe src="MACHOTE DE COTIZACION.html"></iframe></div>
+    <div id="v-odc" class="view-sec hidden"><iframe src="ODC.html"></iframe></div>
     <div id="v-os" class="view-sec hidden"><iframe src="ORDENES DE SERVICIO.HTML"></iframe></div>
     <div id="v-rem" class="view-sec hidden"><iframe src="REMISIONES-NDC IMPETEC.HTML"></iframe></div>
     <div id="v-edc" class="view-sec hidden"><iframe src="ESTADO DE CUENTA.html"></iframe></div>
@@ -240,6 +242,8 @@
         if(t === 'cal') document.querySelector('#v-cal iframe').src = 'AGENDA.HTML';
         if(t === 'bi') document.querySelector('#v-bi iframe').src = 'reportes.html';
         if(t === 'inv') document.querySelector('#v-inv iframe').src = 'inventario.html';
+        // REFRESCAR ODC SI ES NECESARIO
+        if(t === 'odc') document.querySelector('#v-odc iframe').src = 'ODC.html';
     }
 
     function openUserMgmt() {
