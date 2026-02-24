@@ -49,7 +49,7 @@
 
     <div id="modal-item" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl">
-            <h3 class="font-black mb-6 uppercase text-blue-900 text-center">Registro de Producto</h3>
+            <h3 id="modal-title" class="font-black mb-6 uppercase text-blue-900 text-center">Registro de Producto</h3>
             <input type="hidden" id="f-id">
             <div class="space-y-4">
                 <input type="text" id="f-code" placeholder="SKU / CÓDIGO" class="w-full p-3 rounded-xl bg-slate-50 border font-bold uppercase outline-none focus:border-blue-500">
@@ -67,32 +67,49 @@
     </div>
 
     <script>
-        // Configuración idéntica a tu Firebase
         const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Obtener usuario activo sincronizado con tu rama 'users'
         let currentUser = localStorage.getItem('imp_user') || 'Admin';
-
-        // Mostrar usuario en la parte superior para confirmación
         document.getElementById('active-user-display').innerText = `Operador: ${currentUser}`;
 
         function openModal() {
             document.getElementById('modal-item').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = "Registro de Producto";
             document.getElementById('f-id').value = "";
+            document.getElementById('f-code').value = "";
+            document.getElementById('f-name').value = "";
+            document.getElementById('f-stock').value = "";
+            document.getElementById('f-price').value = "";
         }
+
         function closeModal() { document.getElementById('modal-item').classList.add('hidden'); }
 
-        // AJUSTE RÁPIDO CON RASTREO (Usa los usuarios de tu Firebase)
+        // --- NUEVA FUNCIÓN: EDITAR PRODUCTO ---
+        function editItem(id) {
+            db.ref('inventario/' + id).once('value', (snap) => {
+                const data = snap.val();
+                if (data) {
+                    document.getElementById('f-id').value = data.id;
+                    document.getElementById('f-code').value = data.code;
+                    document.getElementById('f-name').value = data.name;
+                    document.getElementById('f-stock').value = data.stock;
+                    document.getElementById('f-price').value = data.price;
+                    
+                    document.getElementById('modal-title').innerText = "Editar Producto";
+                    document.getElementById('modal-item').classList.remove('hidden');
+                }
+            });
+        }
+
         function adjustQty(id, delta) {
             const now = new Date().toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-
             db.ref('inventario/' + id).transaction(item => {
                 if (item) {
                     const newQty = (item.stock || 0) + delta;
                     item.stock = newQty < 0 ? 0 : newQty;
-                    item.lastUser = currentUser; // Aquí se guarda el usuario que inició sesión
+                    item.lastUser = currentUser;
                     item.lastDate = now;
                 }
                 return item;
@@ -114,7 +131,6 @@
             }).then(() => closeModal());
         }
 
-        // RENDERIZADO DE TABLA
         db.ref('inventario').on('value', snap => {
             const body = document.getElementById('inventory-body');
             body.innerHTML = '';
@@ -139,7 +155,14 @@
                         </td>
                         <td class="p-4 text-right font-black text-slate-900">$${(d.price || 0).toLocaleString()}</td>
                         <td class="p-4 text-right">
-                            <button onclick="db.ref('inventario/${d.id}').remove()" class="text-slate-200 hover:text-red-500 transition px-2"><i class="fas fa-trash-alt text-xs"></i></button>
+                            <div class="flex justify-end gap-2">
+                                <button onclick="editItem('${d.id}')" class="text-slate-300 hover:text-blue-600 transition px-2">
+                                    <i class="fas fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="db.ref('inventario/${d.id}').remove()" class="text-slate-200 hover:text-red-500 transition px-2">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
