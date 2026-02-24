@@ -2,94 +2,133 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>IMPETEC - Control de Series y Clientes</title>
+    <title>IMPETEC - Inventario Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; color: #1e293b; }
-        .table-container { background: white; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; }
-        th { background: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; padding: 15px; border-bottom: 1px solid #e2e8f0; }
-        .user-tag { background: #004691; color: white; padding: 3px 10px; border-radius: 20px; font-size: 9px; font-weight: 900; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
-        /* Estilo para las Series */
-        .serial-box { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; background: #fff; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 6px; }
-        .serial-text { font-family: monospace; font-weight: bold; font-size: 10px; color: #1e293b; }
-        .status-available { color: #16a34a; font-size: 8px; font-weight: 900; text-transform: uppercase; background: #dcfce7; padding: 2px 5px; border-radius: 4px; }
-        .status-sold { color: #ca8a04; font-size: 8px; font-weight: 900; text-transform: uppercase; background: #fef9c3; padding: 2px 5px; border-radius: 4px; }
+        body { background: #f1f5f9; font-family: 'Inter', sans-serif; padding: 25px; color: #334155; }
         
-        .cat-badge { font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
+        /* Tipografía y Legibilidad */
+        .text-readable { font-size: 0.95rem; letter-spacing: -0.01em; line-height: 1.5; }
+        .table-container { background: white; border-radius: 16px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        
+        th { background: #f8fafc; color: #475569; font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 18px; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 16px; vertical-align: middle; }
+
+        /* Etiquetas de Series mejoradas */
+        .serial-box { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 8px; }
+        .serial-text { font-family: 'Monaco', 'Consolas', monospace; font-weight: 600; font-size: 11px; color: #0f172a; }
+        
+        .status-available { color: #15803d; font-size: 9px; font-weight: 800; background: #dcfce7; padding: 2px 8px; border-radius: 5px; }
+        .status-sold { color: #a16207; font-size: 9px; font-weight: 800; background: #fef9c3; padding: 2px 8px; border-radius: 5px; }
+        
+        .user-pill { background: #1e293b; color: #f8fafc; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+
+        @media print {
+            .no-print { display: none !important; }
+            .table-container { border: none; }
+            body { background: white; padding: 0; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 no-print">
             <div>
-                <h1 class="text-2xl font-black text-slate-800 uppercase italic">Inventario <span class="text-blue-600 italic">IMPETEC</span></h1>
-                <div id="active-user-display" class="text-[10px] font-bold text-slate-400 mt-1 uppercase"></div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight italic">IMPETEC <span class="text-blue-600">STOCK</span></h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                    <span id="active-user-display" class="text-xs font-bold text-slate-500 uppercase tracking-wider"></span>
+                </div>
             </div>
             
-            <div class="relative w-full md:w-80">
-                <i class="fas fa-search absolute left-4 top-3 text-slate-400"></i>
-                <input type="text" id="busqueda" onkeyup="filtrarTabla()" placeholder="Buscar equipo o serie..." 
-                class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 ring-blue-500 outline-none text-sm">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="relative flex-1 md:w-80">
+                    <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
+                    <input type="text" id="busqueda" onkeyup="filtrarTabla()" placeholder="Buscar producto, serie o cliente..." class="w-full pl-12 pr-4 py-3 rounded-2xl border-none shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium">
+                </div>
+                <button onclick="window.print()" class="bg-white text-slate-700 p-3.5 rounded-2xl hover:bg-slate-50 border shadow-sm transition">
+                    <i class="fas fa-print"></i>
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl font-bold uppercase text-xs shadow-lg shadow-blue-200 transition-all">+ Nuevo</button>
             </div>
-
-            <button onclick="openModal()" class="bg-blue-900 text-white px-6 py-2 rounded-xl font-bold uppercase text-[10px] shadow-lg">+ Nuevo Registro</button>
         </div>
 
-        <div class="table-container shadow-sm overflow-x-auto">
+        <div class="table-container overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr>
-                        <th class="w-1/3">Producto / SKU</th>
-                        <th>Series y Asignación</th>
+                        <th class="w-1/4">Producto / Info</th>
+                        <th class="w-1/3">Estatus de Series</th>
                         <th class="text-center">Stock</th>
-                        <th class="text-right">Precio</th>
-                        <th class="text-right px-4 text-[8px]">Acción</th>
+                        <th class="text-right">Última Edición</th>
+                        <th class="text-right px-6 no-print">Acción</th>
                     </tr>
                 </thead>
-                <tbody id="inventory-body" class="text-sm"></tbody>
+                <tbody id="inventory-body" class="text-readable">
+                    </tbody>
             </table>
+        </div>
+
+        <div class="mt-12 no-print">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="h-px flex-1 bg-slate-300"></div>
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Historial de Movimientos</h3>
+                <div class="h-px flex-1 bg-slate-300"></div>
+            </div>
+            <div id="rastreo-log" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                </div>
         </div>
     </div>
 
-    <div id="modal-item" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-center justify-center backdrop-blur-sm overflow-y-auto p-4">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-lg shadow-2xl my-auto">
-            <h3 id="modal-title" class="font-black mb-6 uppercase text-blue-900 text-center">Gestión de Inventario</h3>
+    <div id="modal-item" class="fixed inset-0 bg-slate-900/40 hidden z-[100] flex items-center justify-center backdrop-blur-md p-4">
+        <div class="bg-white p-8 rounded-[2rem] w-full max-w-lg shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center mb-8">
+                <h3 id="modal-title" class="text-xl font-extrabold text-slate-800 uppercase italic">Gestión de Ítem</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            
             <input type="hidden" id="f-id">
             
-            <div class="space-y-4">
-                <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                    <button onclick="setType('EQUIPO')" id="btn-equipo" class="flex-1 py-2 rounded-lg font-black text-[10px] uppercase transition">Equipo</button>
-                    <button onclick="setType('CONSUMIBLE')" id="btn-consumible" class="flex-1 py-2 rounded-lg font-black text-[10px] uppercase text-slate-400">Consumible</button>
+            <div class="space-y-5">
+                <div class="flex gap-2 p-1.5 bg-slate-100 rounded-2xl">
+                    <button onclick="setType('EQUIPO')" id="btn-equipo" class="flex-1 py-3 rounded-xl font-bold text-xs uppercase transition shadow-sm bg-white text-blue-600">Equipo</button>
+                    <button onclick="setType('CONSUMIBLE')" id="btn-consumible" class="flex-1 py-3 rounded-xl font-bold text-xs uppercase transition text-slate-400">Consumible</button>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="f-code" placeholder="SKU" class="p-3 rounded-xl bg-slate-50 border font-bold uppercase text-sm">
-                    <input type="number" id="f-price" placeholder="PRECIO $" class="p-3 rounded-xl bg-slate-50 border font-bold text-blue-600 text-sm">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">SKU / Código</label>
+                        <input type="text" id="f-code" class="w-full p-4 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 font-bold uppercase text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Precio Unitario</label>
+                        <input type="number" id="f-price" class="w-full p-4 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 font-bold text-blue-600 text-sm">
+                    </div>
                 </div>
                 
-                <input type="text" id="f-name" placeholder="NOMBRE DEL ARTÍCULO" class="w-full p-3 rounded-xl bg-slate-50 border font-bold text-sm">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Nombre del Producto</label>
+                    <input type="text" id="f-name" class="w-full p-4 rounded-xl bg-slate-50 border-none ring-1 ring-slate-200 font-semibold text-sm">
+                </div>
                 
-                <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                    <label class="text-[10px] font-black text-blue-600 uppercase mb-2 block text-center">Cantidad en Stock</label>
-                    <input type="number" id="f-stock" oninput="generarCamposSerie()" class="w-full p-2 rounded-xl bg-white border font-black text-center text-xl outline-none">
+                <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-center">
+                    <label class="text-[10px] font-black text-blue-600 uppercase mb-3 block">Cantidad disponible</label>
+                    <input type="number" id="f-stock" oninput="generarCamposSerie()" class="w-32 bg-transparent text-4xl font-black text-blue-900 outline-none text-center">
                 </div>
 
                 <div id="extra-fields" class="space-y-3">
-                    <label class="text-[10px] font-black text-slate-400 uppercase">Listado de Series y Clientes:</label>
-                    <div id="contenedor-series" class="max-h-60 overflow-y-auto space-y-2 pr-2">
-                        </div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Detalle de cada unidad:</p>
+                    <div id="contenedor-series" class="max-h-52 overflow-y-auto space-y-2 pr-2 custom-scroll"></div>
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-6">
-                <button onclick="closeModal()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold uppercase text-[10px]">Cerrar</button>
-                <button onclick="saveItem()" class="flex-1 bg-blue-900 text-white p-3 rounded-xl font-bold uppercase text-[10px]">Guardar Inventario</button>
-            </div>
+            <button onclick="saveItem()" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white p-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-100">Guardar en Inventario</button>
         </div>
     </div>
 
@@ -100,13 +139,13 @@
 
         let currentType = 'EQUIPO';
         let currentUser = localStorage.getItem('imp_user') || 'Admin';
-        document.getElementById('active-user-display').innerText = `Operador: ${currentUser}`;
+        document.getElementById('active-user-display').innerText = `OPERADOR: ${currentUser}`;
 
         function setType(type) {
             currentType = type;
             document.getElementById('extra-fields').classList.toggle('hidden', type !== 'EQUIPO');
-            document.getElementById('btn-equipo').className = type === 'EQUIPO' ? "flex-1 py-2 rounded-lg font-black text-[10px] bg-white text-blue-600 shadow-sm" : "flex-1 py-2 text-slate-400 font-black text-[10px]";
-            document.getElementById('btn-consumible').className = type === 'CONSUMIBLE' ? "flex-1 py-2 rounded-lg font-black text-[10px] bg-white text-blue-600 shadow-sm" : "flex-1 py-2 text-slate-400 font-black text-[10px]";
+            document.getElementById('btn-equipo').className = type === 'EQUIPO' ? "flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-white text-blue-600 shadow-sm" : "flex-1 py-3 text-slate-400 font-bold text-xs uppercase";
+            document.getElementById('btn-consumible').className = type === 'CONSUMIBLE' ? "flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-white text-blue-600 shadow-sm" : "flex-1 py-3 text-slate-400 font-bold text-xs uppercase";
             if(type === 'EQUIPO') generarCamposSerie();
         }
 
@@ -115,22 +154,106 @@
             const cant = parseInt(document.getElementById('f-stock').value) || 0;
             const contenedor = document.getElementById('contenedor-series');
             contenedor.innerHTML = '';
-            
             for(let i = 0; i < Math.min(cant, 30); i++) {
                 const sVal = datosPrevios[i]?.serie || '';
                 const cVal = datosPrevios[i]?.cliente || '';
                 contenedor.innerHTML += `
-                    <div class="flex gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        <input type="text" placeholder="SERIE" class="serie-val w-1/2 p-2 rounded border bg-white font-mono text-[10px] uppercase" value="${sVal}">
-                        <input type="text" placeholder="CLIENTE (O DISPONIBLE)" class="cliente-val w-1/2 p-2 rounded border bg-white font-bold text-[10px] uppercase" value="${cVal}">
+                    <div class="flex gap-2 bg-white p-2 rounded-xl border border-slate-200">
+                        <input type="text" placeholder="SERIE" class="serie-val flex-1 p-2 bg-slate-50 rounded-lg font-mono text-xs uppercase outline-none focus:ring-1 ring-blue-500" value="${sVal}">
+                        <input type="text" placeholder="CLIENTE" class="cliente-val flex-1 p-2 bg-slate-50 rounded-lg font-bold text-xs uppercase outline-none focus:ring-1 ring-blue-500" value="${cVal}">
                     </div>`;
             }
         }
 
+        function saveItem() {
+            const id = document.getElementById('f-id').value || 'ID-' + Date.now();
+            const nombre = document.getElementById('f-name').value;
+            const seriesData = [];
+            
+            document.querySelectorAll('.serie-val').forEach((input, i) => {
+                if(input.value) seriesData.push({ serie: input.value.toUpperCase(), cliente: document.querySelectorAll('.cliente-val')[i].value.toUpperCase() || 'DISPONIBLE' });
+            });
+
+            const updateObj = {
+                id, tipo: currentType, code: document.getElementById('f-code').value.toUpperCase(),
+                name: nombre, stock: parseInt(document.getElementById('f-stock').value) || 0,
+                price: parseFloat(document.getElementById('f-price').value) || 0,
+                series_data: currentType === 'EQUIPO' ? seriesData : null,
+                lastUser: currentUser, 
+                lastDate: new Date().toLocaleString()
+            };
+
+            db.ref('inventario/' + id).update(updateObj);
+
+            // LOG DE RASTREO
+            db.ref('rastreo_movimientos').push({
+                usuario: currentUser,
+                accion: `actualizó ${nombre} (Stock: ${updateObj.stock})`,
+                fecha: new Date().toLocaleString()
+            });
+
+            closeModal();
+        }
+
+        db.ref('inventario').on('value', snap => {
+            const body = document.getElementById('inventory-body'); body.innerHTML = '';
+            snap.forEach(child => {
+                const d = child.val();
+                let seriesHtml = '';
+                if(d.tipo === 'EQUIPO' && d.series_data) {
+                    d.series_data.forEach(s => {
+                        const isDisp = s.cliente === 'DISPONIBLE' || !s.cliente;
+                        seriesHtml += `<div class="serial-box"><span class="serial-text">${s.serie}</span><span class="${isDisp?'status-available':'status-sold'}">${isDisp?'Disponible':s.cliente}</span></div>`;
+                    });
+                }
+                body.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50/50 transition duration-200">
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="w-fit text-[9px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-500 uppercase mb-1">${d.tipo}</span>
+                                <span class="font-extrabold text-slate-800 text-sm uppercase">${d.name}</span>
+                                <span class="text-[10px] font-bold text-blue-500 font-mono">${d.code}</span>
+                            </div>
+                        </td>
+                        <td><div class="max-h-32 overflow-y-auto">${seriesHtml || '<span class="text-slate-300 italic text-xs">Sin series</span>'}</div></td>
+                        <td class="text-center"><span class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-black text-lg">${d.stock}</span></td>
+                        <td class="text-right">
+                            <div class="user-pill">
+                                <i class="fas fa-user-edit"></i> ${d.lastUser || 'S/N'}
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase">${d.lastDate || ''}</div>
+                        </td>
+                        <td class="text-right no-print px-6">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="editItem('${d.id}')" class="w-9 h-9 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"><i class="fas fa-pen text-xs"></i></button>
+                                <button onclick="if(confirm('¿Borrar ítem?')) db.ref('inventario/${d.id}').remove()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+        });
+
+        db.ref('rastreo_movimientos').limitToLast(6).on('value', snap => {
+            const logBox = document.getElementById('rastreo-log'); logBox.innerHTML = '';
+            let logs = []; snap.forEach(c => { logs.unshift(c.val()); });
+            logs.forEach(l => {
+                logBox.innerHTML += `
+                <div class="bg-white p-3 rounded-2xl border flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">${l.usuario.charAt(0)}</div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-800 uppercase leading-none">${l.usuario}</p>
+                            <p class="text-[10px] text-slate-500">${l.accion}</p>
+                        </div>
+                    </div>
+                    <span class="text-[8px] font-bold text-slate-300 font-mono">${l.fecha.split(',')[1]}</span>
+                </div>`;
+            });
+        });
+
         function editItem(id) {
-            db.ref('inventario/' + id).once('value', (snap) => {
-                const d = snap.val();
-                if(!d) return;
+            db.ref('inventario/' + id).once('value', (s) => {
+                const d = s.val(); if(!d) return;
                 document.getElementById('f-id').value = d.id;
                 document.getElementById('f-code').value = d.code;
                 document.getElementById('f-name').value = d.name;
@@ -139,81 +262,18 @@
                 setType(d.tipo || 'EQUIPO');
                 if(d.tipo === 'EQUIPO') generarCamposSerie(d.series_data || []);
                 document.getElementById('modal-item').classList.remove('hidden');
+                document.getElementById('modal-title').innerText = "Editando Producto";
             });
         }
-
-        function saveItem() {
-            const id = document.getElementById('f-id').value || 'SKU-' + Date.now();
-            const seriesInputs = document.querySelectorAll('.serie-val');
-            const clienteInputs = document.querySelectorAll('.cliente-val');
-            
-            let seriesData = [];
-            seriesInputs.forEach((input, i) => {
-                if(input.value) {
-                    seriesData.push({
-                        serie: input.value.toUpperCase(),
-                        cliente: clienteInputs[i].value.toUpperCase() || 'DISPONIBLE'
-                    });
-                }
-            });
-
-            db.ref('inventario/' + id).update({
-                id,
-                tipo: currentType,
-                code: document.getElementById('f-code').value.toUpperCase(),
-                name: document.getElementById('f-name').value,
-                stock: parseInt(document.getElementById('f-stock').value) || 0,
-                price: parseFloat(document.getElementById('f-price').value) || 0,
-                series_data: currentType === 'EQUIPO' ? seriesData : null,
-                lastUser: currentUser,
-                lastDate: new Date().toLocaleString()
-            }).then(() => closeModal());
-        }
-
-        db.ref('inventario').on('value', snap => {
-            const body = document.getElementById('inventory-body');
-            body.innerHTML = '';
-            snap.forEach(child => {
-                const d = child.val();
-                let seriesHtml = '';
-                
-                if(d.tipo === 'EQUIPO' && d.series_data) {
-                    d.series_data.forEach(s => {
-                        const isDisp = s.cliente === 'DISPONIBLE' || !s.cliente;
-                        const statusClass = isDisp ? 'status-available' : 'status-sold';
-                        seriesHtml += `
-                            <div class="serial-box">
-                                <span class="serial-text">${s.serie}</span>
-                                <span class="${statusClass}">${isDisp ? 'Disponible' : s.cliente}</span>
-                            </div>`;
-                    });
-                }
-
-                body.innerHTML += `
-                    <tr class="border-b hover:bg-slate-50 transition">
-                        <td class="p-4">
-                            <span class="cat-badge ${d.tipo === 'EQUIPO' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}">${d.tipo}</span>
-                            <div class="font-black text-slate-700 uppercase text-xs">${d.name}</div>
-                            <div class="text-[9px] text-blue-500 font-mono font-bold">${d.code}</div>
-                        </td>
-                        <td class="p-4">${seriesHtml || '<span class="text-slate-300 italic text-[10px]">No aplica</span>'}</td>
-                        <td class="p-4 text-center font-black text-lg text-blue-900">${d.stock}</td>
-                        <td class="p-4 text-right font-black text-slate-900">$${(d.price || 0).toLocaleString()}</td>
-                        <td class="p-4 text-right">
-                            <div class="flex justify-end gap-3">
-                                <button onclick="editItem('${d.id}')" class="text-slate-300 hover:text-blue-600"><i class="fas fa-pen"></i></button>
-                                <button onclick="if(confirm('¿Eliminar?')) db.ref('inventario/${d.id}').remove()" class="text-slate-200 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                        </td>
-                    </tr>`;
-            });
-        });
-
-        function openModal() {
-            document.getElementById('modal-item').classList.remove('hidden');
-            document.getElementById('f-id').value = "";
-            document.getElementById('f-stock').value = "";
-            setType('EQUIPO');
+        function openModal() { 
+            document.getElementById('modal-item').classList.remove('hidden'); 
+            document.getElementById('modal-title').innerText = "Nuevo Registro";
+            document.getElementById('f-id').value = ""; 
+            document.getElementById('f-stock').value = "0";
+            document.getElementById('f-name').value = "";
+            document.getElementById('f-code').value = "";
+            document.getElementById('f-price').value = "";
+            setType('EQUIPO'); 
         }
         function closeModal() { document.getElementById('modal-item').classList.add('hidden'); }
         function filtrarTabla() {
