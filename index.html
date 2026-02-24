@@ -11,7 +11,6 @@
         :root { --primary: #004691; --bg: #f8fafc; }
         body { background: var(--bg); font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; color: #1e293b; display: flex; }
         
-        /* SIDEBAR ABATIBLE */
         .sidebar { 
             width: 280px; 
             background: white; 
@@ -24,7 +23,6 @@
         }
         .sidebar.collapsed { width: 0; overflow: hidden; border-right: none; }
         
-        /* CONTENIDO PRINCIPAL ADAPTABLE */
         .main { 
             flex-grow: 1;
             height: 100vh; 
@@ -38,7 +36,6 @@
         .kanban-col { width: 310px; flex-shrink: 0; background: #f1f5f9; border-radius: 20px; padding: 15px; min-height: 70vh; border: 1px solid #e2e8f0; }
         .card-deal { background: white; padding: 16px; border-radius: 15px; margin-bottom: 12px; border-bottom: 4px solid #cbd5e1; cursor: pointer; position: relative; }
         
-        /* BOTÓN DE ABATIR */
         #toggle-btn {
             position: fixed;
             top: 15px;
@@ -98,6 +95,7 @@
         <button onclick="tab('bi')" class="nav-link text-blue-600" id="btn-bi"><i class="fas fa-chart-line"></i> Analytics BI</button>
         
         <div class="px-8 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos y Finanzas</div>
+        <button onclick="tab('pagos')" class="nav-link" id="btn-pagos"><i class="fas fa-credit-card"></i> Control de Pagos</button>
         <button onclick="tab('inv')" class="nav-link" id="btn-inv"><i class="fas fa-boxes"></i> Inventario Central</button>
         <button onclick="tab('ent')" class="nav-link" id="btn-ent"><i class="fas fa-check-double"></i> Entregables</button>
         <button onclick="tab('lev')" class="nav-link" id="btn-lev"><i class="fas fa-map-marker-alt"></i> Levantamiento</button>
@@ -134,6 +132,7 @@
         </div>
     </div>
 
+    <div id="v-pagos" class="view-sec hidden"><iframe src="subidadeodc.html"></iframe></div>
     <div id="v-cal" class="view-sec hidden"><iframe src="AGENDA.HTML"></iframe></div>
     <div id="v-bi" class="view-sec hidden"><iframe src="reportes.html"></iframe></div>
     <div id="v-inv" class="view-sec hidden"><iframe src="inventario.html"></iframe></div>
@@ -238,11 +237,10 @@
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         document.getElementById('v-'+t).classList.remove('hidden');
         document.getElementById('btn-'+t).classList.add('active');
-        // REFRESCAR IFRAMES CON NOMBRES CORRECTOS
         if(t === 'cal') document.querySelector('#v-cal iframe').src = 'AGENDA.HTML';
         if(t === 'bi') document.querySelector('#v-bi iframe').src = 'reportes.html';
         if(t === 'inv') document.querySelector('#v-inv iframe').src = 'inventario.html';
-        // REFRESCAR ODC SI ES NECESARIO
+        if(t === 'pagos') document.querySelector('#v-pagos iframe').src = 'subidadeodc.html';
         if(t === 'odc') document.querySelector('#v-odc iframe').src = 'ODC.html';
     }
 
