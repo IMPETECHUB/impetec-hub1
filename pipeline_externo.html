@@ -18,8 +18,11 @@
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden; /* Evita que toda la pantalla haga scroll */
             color: #1e293b;
+            display: flex;
+            flex-direction: column;
         }
 
         .deal-card {
@@ -41,11 +44,17 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
         }
 
+        /* Scroll independiente por columna */
         .kanban-column {
-            min-height: 70vh;
+            height: calc(100vh - 220px); /* Ajuste dinámico según cabecera */
+            overflow-y: auto;
             border-radius: 1.5rem;
             transition: all 0.3s ease;
+            padding: 10px;
         }
+
+        .kanban-column::-webkit-scrollbar { width: 4px; }
+        .kanban-column::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
         .drag-over {
             background: rgba(59, 130, 246, 0.08);
@@ -58,11 +67,22 @@
 
         #col-perdido { opacity: 0.6; grayscale: 1; transition: 0.3s; }
         #col-perdido:hover { opacity: 1; grayscale: 0; }
+
+        .search-container {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 300px;
+        }
     </style>
 </head>
 <body class="p-6">
 
-    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4 sticky top-0 z-40 bg-white/60 p-4 rounded-3xl backdrop-blur-md border border-white/20 shadow-sm">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white/60 p-4 rounded-3xl backdrop-blur-md border border-white/20 shadow-sm shrink-0">
         <div class="flex items-center gap-4">
             <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200">
                 <i data-lucide="zap" class="text-white w-6 h-6"></i>
@@ -71,24 +91,31 @@
                 <h1 class="text-xl font-800 text-slate-900 tracking-tighter">IMPETEC <span class="text-blue-600">SMART FLOW</span></h1>
                 <div class="flex items-center gap-2">
                     <select id="m-sel" onchange="loadDeals()" class="text-[10px] font-bold uppercase text-slate-500 bg-transparent outline-none cursor-pointer hover:text-blue-600"></select>
-                    <span id="year-display" class="text-[10px] font-bold text-slate-400">2024</span>
+                    <span id="year-display" class="text-[10px] font-bold text-slate-400">2026</span>
                 </div>
             </div>
         </div>
 
-        <button onclick="openEditModal()" class="flex items-center gap-3 bg-slate-900 px-6 py-3 rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-xl">
-            <i data-lucide="plus" class="w-5 h-5"></i> Nuevo Negocio
-        </button>
+        <div class="flex items-center gap-4">
+            <div class="search-container shadow-inner">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                <input type="text" id="deal-search" onkeyup="renderBoard()" placeholder="Buscar cliente..." class="bg-transparent outline-none text-xs font-bold w-full uppercase">
+            </div>
+
+            <button onclick="openEditModal()" class="flex items-center gap-3 bg-slate-900 px-6 py-3 rounded-2xl text-sm font-bold text-white hover:bg-blue-600 transition-all shadow-xl">
+                <i data-lucide="plus" class="w-5 h-5"></i> Nuevo Negocio
+            </button>
+        </div>
     </header>
 
-    <div class="flex gap-8 overflow-x-auto pb-10 custom-scroll px-2">
+    <div class="flex gap-8 overflow-x-auto pb-4 custom-scroll px-2 flex-1">
         
         <div class="flex-shrink-0 w-80">
             <div class="flex justify-between items-center mb-5 px-4">
                 <h2 class="font-800 text-slate-500 uppercase text-[11px] tracking-widest flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Prospectos</h2>
                 <span id="count-prospecto" class="text-[10px] font-black bg-white border px-3 py-1 rounded-full text-slate-400 shadow-sm">0</span>
             </div>
-            <div id="prospecto" ondrop="drop(event, 'prospecto')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4 p-2"></div>
+            <div id="prospecto" ondrop="drop(event, 'prospecto')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4"></div>
         </div>
 
         <div class="flex-shrink-0 w-80">
@@ -96,7 +123,7 @@
                 <h2 class="font-800 text-blue-600 uppercase text-[11px] tracking-widest flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Cotizados</h2>
                 <span id="val-cotizado" class="text-[10px] font-black text-slate-400">$0</span>
             </div>
-            <div id="cotizado" ondrop="drop(event, 'cotizado')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4 p-2"></div>
+            <div id="cotizado" ondrop="drop(event, 'cotizado')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4"></div>
         </div>
 
         <div class="flex-shrink-0 w-80">
@@ -104,7 +131,7 @@
                 <h2 class="font-800 text-amber-600 uppercase text-[11px] tracking-widest flex items-center gap-2"><i data-lucide="hammer" class="w-4 h-4"></i> Obra</h2>
                 <span id="val-obra" class="text-[10px] font-black text-slate-400">$0</span>
             </div>
-            <div id="obra" ondrop="drop(event, 'obra')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4 p-2"></div>
+            <div id="obra" ondrop="drop(event, 'obra')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4"></div>
         </div>
 
         <div class="flex-shrink-0 w-80">
@@ -112,7 +139,7 @@
                 <h2 class="font-800 text-emerald-600 uppercase text-[11px] tracking-widest flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Ganado</h2>
                 <span id="val-ganado" class="text-[10px] font-black text-slate-400">$0</span>
             </div>
-            <div id="ganado" ondrop="drop(event, 'ganado')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4 p-2"></div>
+            <div id="ganado" ondrop="drop(event, 'ganado')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4"></div>
         </div>
 
         <div id="col-perdido" class="flex-shrink-0 w-80 border-l border-slate-200 pl-4">
@@ -120,7 +147,7 @@
                 <h2 class="font-800 text-red-500 uppercase text-[11px] tracking-widest flex items-center gap-2"><i data-lucide="x-circle" class="w-4 h-4"></i> Perdidos</h2>
                 <span id="val-perdido" class="text-[10px] font-black text-slate-400">$0</span>
             </div>
-            <div id="perdido" ondrop="drop(event, 'perdido')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4 p-2"></div>
+            <div id="perdido" ondrop="drop(event, 'perdido')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column space-y-4"></div>
         </div>
     </div>
 
@@ -130,22 +157,17 @@
                 <h3 id="modal-title" class="text-[10px] font-900 uppercase tracking-widest text-slate-400">Gestión de Negocio</h3>
                 <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border hover:text-red-500 transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            
             <div class="p-8 space-y-5">
                 <div class="p-5 bg-blue-600 rounded-3xl text-center shadow-lg shadow-blue-100">
                     <label class="block text-[10px] font-900 text-blue-100 uppercase mb-3">Escáner de Cotización (PDF)</label>
                     <input type="file" id="pdf-in" accept=".pdf" onchange="processPDF(this)" class="block w-full text-[10px] text-blue-100 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-white file:text-blue-600 cursor-pointer"/>
                     <p id="pdf-status" class="text-[10px] text-blue-200 mt-3 font-bold"></p>
                 </div>
-
-                <input type="hidden" id="f-id">
-                <input type="hidden" id="f-st">
-                
+                <input type="hidden" id="f-id"><input type="hidden" id="f-st">
                 <div class="space-y-1">
                     <label class="text-[10px] font-800 text-slate-400 uppercase ml-1">Cliente / Proyecto</label>
                     <input type="text" id="f-cli" class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold focus:border-blue-500 outline-none uppercase text-sm">
                 </div>
-
                 <div class="space-y-1">
                     <label class="text-[10px] font-800 text-slate-400 uppercase ml-1">Monto del Proyecto</label>
                     <div class="relative">
@@ -153,7 +175,6 @@
                         <input type="number" id="f-mon" class="w-full bg-slate-50 border-2 border-slate-100 p-4 pl-8 rounded-2xl font-black text-2xl text-slate-900 focus:border-blue-500 outline-none">
                     </div>
                 </div>
-
                 <div class="pt-4 flex gap-3">
                     <button onclick="saveDeal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl font-bold uppercase text-xs shadow-lg shadow-blue-200 transition-all active:scale-95">Guardar Negocio</button>
                     <button id="btn-delete" onclick="deleteDeal()" class="bg-red-50 text-red-500 px-5 rounded-2xl hover:bg-red-500 hover:text-white transition-all"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
@@ -166,15 +187,13 @@
         const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
         let me = localStorage.getItem('imp_user') || 'Admin';
-        let currentYear = new Date().getFullYear();
+        let currentYear = 2026;
         let currentDeals = [];
 
-        // Iniciar Selector de Meses
         const ms = document.getElementById('m-sel');
         ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].forEach((m, i) => {
             const o = document.createElement('option'); o.value = i; o.innerText = m;
@@ -191,16 +210,19 @@
         }
 
         function renderBoard() {
+            const searchTerm = document.getElementById('deal-search').value.toUpperCase();
             const cols = ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'];
             cols.forEach(id => document.getElementById(id).innerHTML = '');
             let totals = { prospecto: 0, cotizado: 0, obra: 0, ganado: 0, perdido: 0 };
             let countP = 0;
 
             currentDeals.forEach((deal, idx) => {
+                // FILTRO DE BÚSQUEDA
+                if(searchTerm && !deal.cliente.toUpperCase().includes(searchTerm)) return;
+                
                 if(!cols.includes(deal.status)) return;
                 const card = document.createElement('div');
-                card.className = 'deal-card p-5 rounded-[1.5rem] shadow-sm';
-                card.style.animationDelay = `${idx * 0.05}s`;
+                card.className = 'deal-card p-5 rounded-[1.5rem] shadow-sm mb-4';
                 card.draggable = true;
                 card.onclick = () => openEditModal(deal.id);
                 card.ondragstart = (e) => { e.dataTransfer.setData("text", deal.id); card.classList.add('opacity-40'); };
@@ -231,54 +253,40 @@
             lucide.createIcons();
         }
 
-        // --- MOTOR DE ESCANEO AGRESIVO ---
         async function processPDF(input) {
             const file = input.files[0];
             if (!file) return;
-
             const status = document.getElementById('pdf-status');
             status.innerHTML = "⚡ ANALIZANDO DATOS...";
-            
-            // Auto-nombre
             document.getElementById('f-cli').value = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").toUpperCase();
-
             const reader = new FileReader();
             reader.onload = async function() {
                 try {
                     const typedarray = new Uint8Array(this.result);
                     const pdf = await pdfjsLib.getDocument(typedarray).promise;
                     let fullText = "";
-                    
                     for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
                         fullText += content.items.map(item => item.str).join(" ") + " ";
                     }
-
                     const cleanText = fullText.replace(/\s+/g, ' ').toUpperCase();
-                    // Regex busca números con formato de moneda (1,234.56)
                     const moneyRegex = /(\d{1,3}(?:,\d{3})*(?:\.\d{2}))|(\d+(?:\.\d{2}))/g;
                     const keywords = ["TOTAL", "NETO", "IMPORTE", "SUMA", "VALOR", "TOTAL A PAGAR"];
-                    
                     let finalAmount = 0;
                     let foundByKeyword = false;
-
-                    // 1. Buscar de atrás hacia adelante (los totales suelen estar al final)
                     for (let word of keywords) {
                         const lastIdx = cleanText.lastIndexOf(word);
                         if (lastIdx !== -1) {
                             const snippet = cleanText.substring(lastIdx, lastIdx + 60);
                             const matches = snippet.match(moneyRegex);
                             if (matches) {
-                                // Tomamos el último número encontrado tras la palabra clave
                                 finalAmount = parseFloat(matches[matches.length - 1].replace(/,/g, ''));
                                 foundByKeyword = true;
                                 break;
                             }
                         }
                     }
-
-                    // 2. Si falla, tomamos el número más alto del documento
                     if (!foundByKeyword) {
                         const allMatches = cleanText.match(moneyRegex);
                         if (allMatches) {
@@ -286,7 +294,6 @@
                             finalAmount = Math.max(...nums);
                         }
                     }
-
                     if (finalAmount > 0) {
                         document.getElementById('f-mon').value = finalAmount;
                         status.innerHTML = "✅ DETECTADO: $" + finalAmount.toLocaleString();
@@ -298,7 +305,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Drag & Drop
         function allowDrop(e) { e.preventDefault(); }
         function dragEnter(e) { e.currentTarget.classList.add('drag-over'); }
         function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
@@ -309,7 +315,6 @@
             if(id) db.ref(`deals/${ms.value}-${currentYear}/${id}`).update({ status: newStatus });
         }
 
-        // Modal Logic
         function openEditModal(id = null) {
             const deal = id ? currentDeals.find(d => d.id === id) : null;
             document.getElementById('f-id').value = id || '';
@@ -318,7 +323,6 @@
             document.getElementById('f-mon').value = deal ? deal.monto : '';
             document.getElementById('pdf-in').value = "";
             document.getElementById('pdf-status').innerText = "";
-            
             document.getElementById('btn-delete').classList.toggle('hidden', !id);
             document.getElementById('modal-title').innerText = id ? 'ACTUALIZAR DATOS' : 'NUEVO PROYECTO';
             document.getElementById('modal-deal').classList.remove('hidden');
@@ -337,13 +341,7 @@
             const cli = document.getElementById('f-cli').value;
             if(!cli) return alert('Ingresa el nombre del cliente');
             const id = document.getElementById('f-id').value || 'ID-' + Date.now();
-            const data = {
-                id: id,
-                cliente: cli.toUpperCase(),
-                monto: parseFloat(document.getElementById('f-mon').value) || 0,
-                status: document.getElementById('f-st').value || 'prospecto',
-                by: me
-            };
+            const data = { id, cliente: cli.toUpperCase(), monto: parseFloat(document.getElementById('f-mon').value) || 0, status: document.getElementById('f-st').value || 'prospecto', by: me };
             db.ref(`deals/${ms.value}-${currentYear}/${id}`).set(data).then(() => closeModal());
         }
 
