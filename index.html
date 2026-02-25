@@ -114,22 +114,7 @@
 
 <main class="main" id="main-content">
     <div id="v-crm" class="view-sec">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-bold text-slate-800">Pipeline <span class="text-blue-600">Comercial</span></h2>
-            <button onclick="openDeal()" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg uppercase text-xs">+ Nueva Negociación</button>
-        </div>
-        <div class="flex gap-4 mb-10">
-            <div class="stat-card bg-white p-5 rounded-2xl border flex-1"><p class="text-[10px] font-bold text-slate-400 uppercase italic">En Espera</p><h4 id="stat-espera" class="text-2xl font-black text-amber-500">$0.00</h4></div>
-            <div class="stat-card bg-white p-5 rounded-2xl border flex-1"><p class="text-[10px] font-bold text-slate-400 uppercase italic">Ganado</p><h4 id="stat-ganado" class="text-2xl font-black text-green-600">$0.00</h4></div>
-            <div class="stat-card bg-white p-5 rounded-2xl border flex-1"><p class="text-[10px] font-bold text-slate-400 uppercase italic">Perdido</p><h4 id="stat-perdido" class="text-2xl font-black text-red-500">$0.00</h4></div>
-        </div>
-        <div class="flex gap-6 overflow-x-auto pb-6">
-            <div class="kanban-col" id="st-prospecto" ondrop="drop(event, 'prospecto')" ondragover="allow(event)"></div>
-            <div class="kanban-col" id="st-cotizado" ondrop="drop(event, 'cotizado')" ondragover="allow(event)"></div>
-            <div class="kanban-col" id="st-obra" ondrop="drop(event, 'obra')" ondragover="allow(event)"></div>
-            <div class="kanban-col" id="st-ganado" ondrop="drop(event, 'ganado')" ondragover="allow(event)"></div>
-            <div class="kanban-col opacity-60" id="st-perdido" ondrop="drop(event, 'perdido')" ondragover="allow(event)"></div>
-        </div>
+        <iframe src="pipeline_externo.html"></iframe>
     </div>
 
     <div id="v-pagos" class="view-sec hidden"><iframe src="subidadeodc.html"></iframe></div>
@@ -259,13 +244,8 @@
         db.ref(`deals/${curM}-${curY}`).on('value', snap => {
             deals = snap.val() ? Object.values(snap.val()) : [];
             updateStats();
-            ['prospecto', 'cotizado', 'obra', 'ganado', 'perdido'].forEach(s => document.getElementById('st-'+s).innerHTML = `<p class="text-[9px] font-black text-slate-400 mb-4 uppercase text-center">${s}</p>`);
-            deals.forEach(d => {
-                const card = document.createElement('div'); card.className = "card-deal"; card.draggable = true;
-                card.ondragstart = (e) => e.dataTransfer.setData("text", d.id); card.onclick = () => openDeal(d.id);
-                card.innerHTML = `<button onclick="event.stopPropagation(); deleteDeal('${d.id}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt text-[8px]"></i></button><div class="font-bold text-slate-700 text-xs truncate uppercase">${d.cliente}</div><div class="text-md font-black text-slate-900 mt-1">$${(d.monto||0).toLocaleString()}</div><div class="text-[7px] text-blue-500 font-bold uppercase mt-2">POR: ${d.by || 'S/N'}</div>`;
-                document.getElementById('st-'+d.status).appendChild(card);
-            });
+            // Lógica de renders de tarjetas de CRM omitida por uso de iframe externo, 
+            // pero mantenida para no romper posibles dependencias internas de datos.
         });
     }
 
@@ -289,9 +269,10 @@
     function updateStats() {
         let e = 0, g = 0, p = 0;
         deals.forEach(d => { const m = parseFloat(d.monto) || 0; if(d.status === 'ganado') g += m; else if(d.status === 'perdido') p += m; else e += m; });
-        document.getElementById('stat-espera').innerText = '$' + e.toLocaleString();
-        document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString();
-        document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
+        // Mantenemos actualización de stats si existen en el DOM
+        if(document.getElementById('stat-espera')) document.getElementById('stat-espera').innerText = '$' + e.toLocaleString();
+        if(document.getElementById('stat-ganado')) document.getElementById('stat-ganado').innerText = '$' + g.toLocaleString();
+        if(document.getElementById('stat-perdido')) document.getElementById('stat-perdido').innerText = '$' + p.toLocaleString();
     }
 
     function loadUsers() {
