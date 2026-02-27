@@ -2,75 +2,64 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>IMPETEC HUB - Pagos Premium</title>
+    <title>IMPETEC HUB - Subida de ODC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f3f4f6; }
-        .btn-gradient { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); transition: all 0.3s ease; }
-        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); }
-        .user-tag { background: #004691; color: white; padding: 3px 10px; border-radius: 20px; font-size: 9px; font-weight: 900; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-gradient { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); transition: all 0.3s ease; }
     </style>
 </head>
-<body class="p-4 md:p-8 text-slate-900">
+<body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">IMPETEC <span class="text-blue-600">PAGOS</span></h1>
-                <div id="active-user-display" class="text-[10px] font-bold text-slate-400 mt-1 uppercase"></div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter italic">IMPETEC <span class="text-red-600">PAGOS</span></h1>
+                <p id="user-display" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"></p>
             </div>
-            <button onclick="document.getElementById('m-add').classList.remove('hidden')" class="btn-gradient text-white px-8 py-3 rounded-2xl font-bold text-sm uppercase shadow-lg">
-                + Nueva Orden
+            <button onclick="document.getElementById('m-add').classList.remove('hidden')" class="btn-gradient text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase shadow-lg">
+                <i class="fas fa-plus-circle mr-2"></i> Nueva ODC
             </button>
-        </div>
+        </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Total Órdenes</p>
-                <h3 id="stat-total" class="text-2xl font-black text-slate-800">0</h3>
-            </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500">
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Pendientes</p>
-                <h3 id="stat-pend" class="text-2xl font-black text-slate-800">0</h3>
-            </div>
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-green-500">
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Pagados</p>
-                <h3 id="stat-pago" class="text-2xl font-black text-slate-800">0</h3>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Orden / Fecha</th>
-                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Responsable</th>
-                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Documento</th>
-                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
-                            <th class="p-6 text-[10px] font-black text-slate-400 uppercase text-right">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista" class="divide-y divide-slate-50"></tbody>
-                </table>
-            </div>
+        <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-slate-100">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                        <th class="p-6 text-[11px] font-black text-slate-400 uppercase">Proveedor</th>
+                        <th class="p-6 text-[11px] font-black text-slate-400 uppercase text-center">Monto</th>
+                        <th class="p-6 text-[11px] font-black text-slate-400 uppercase text-center">Estado</th>
+                        <th class="p-6 text-[11px] font-black text-slate-400 uppercase text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="lista" class="divide-y divide-slate-50"></tbody>
+            </table>
         </div>
     </div>
 
-    <div id="m-add" class="fixed inset-0 bg-slate-900/40 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl">
-            <h3 class="text-2xl font-black text-center text-slate-800 mb-8 uppercase">Registrar Pago</h3>
+    <div id="m-add" class="fixed inset-0 bg-slate-900/40 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white p-8 rounded-[3rem] w-full max-w-md shadow-2xl">
+            <h3 class="text-2xl font-black text-slate-800 mb-8 text-center uppercase italic">Cargar Orden</h3>
             <div class="space-y-5">
-                <input type="text" id="n-orden" placeholder="ID DE ORDEN (EJ: OC-400)" class="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-700 uppercase text-sm shadow-inner">
-                <input type="file" id="f-pdf" accept="application/pdf" class="w-full text-xs font-bold text-slate-400 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:bg-blue-600 file:text-white cursor-pointer">
+                <div class="relative p-8 bg-red-50 border-2 border-dashed border-red-200 rounded-[2rem] text-center">
+                    <input type="file" id="f-pdf" accept=".pdf" onchange="readPDF(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <i class="fas fa-file-pdf text-3xl text-red-500 mb-3"></i>
+                    <p id="pdf-status" class="text-[11px] font-black text-red-600 uppercase">Seleccionar PDF</p>
+                </div>
+                <input type="text" id="n-orden" placeholder="NOMBRE PROVEEDOR" class="w-full p-5 rounded-2xl bg-slate-50 border-none font-bold uppercase text-sm shadow-inner outline-none">
+                <div class="relative">
+                    <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">$</span>
+                    <input type="number" id="n-monto" readonly class="w-full p-5 pl-10 rounded-2xl bg-slate-100 font-black text-2xl text-slate-900 cursor-not-allowed outline-none">
+                </div>
             </div>
             <div class="flex gap-4 mt-10">
-                <button onclick="document.getElementById('m-add').classList.add('hidden')" class="flex-1 text-slate-400 font-bold text-xs uppercase">Cerrar</button>
-                <button id="btn-save" onclick="subir()" class="flex-1 btn-gradient text-white py-4 rounded-2xl font-bold text-xs uppercase shadow-lg">Guardar Orden</button>
+                <button onclick="document.getElementById('m-add').classList.add('hidden')" class="flex-1 text-slate-400 font-bold text-xs uppercase">Cancelar</button>
+                <button onclick="subir()" class="flex-1 btn-gradient text-white py-5 rounded-2xl font-bold text-xs uppercase shadow-lg">Agendar Urgente</button>
             </div>
         </div>
     </div>
@@ -79,39 +68,79 @@
         const firebaseConfig = { databaseURL: "https://impetec-hub-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        // Rastreo igual que en inventario
-        let currentUser = localStorage.getItem('imp_user') || 'Admin';
-        document.getElementById('active-user-display').innerText = `Operador: ${currentUser}`;
+        let me = localStorage.getItem('imp_user') || 'Admin';
+        document.getElementById('user-display').innerText = `Responsable: ${me}`;
+
+        async function readPDF(input) {
+            const file = input.files[0];
+            if (!file) return;
+            document.getElementById('n-orden').value = file.name.replace(".pdf", "").toUpperCase();
+            const reader = new FileReader();
+            reader.onload = async function() {
+                const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                let full = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    full += content.items.map(item => item.str).join(" ") + " ";
+                }
+                const matches = full.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{2})|\d+(?:\.\d{2}))/g);
+                if (matches) {
+                    const total = Math.max(...matches.map(m => parseFloat(m.replace(/,/g, ''))));
+                    document.getElementById('n-monto').value = total;
+                    document.getElementById('pdf-status').innerHTML = "✅ TOTAL: $" + total.toLocaleString();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- FUNCIÓN QUE SINCRONIZA CON EL COLOR ROJO DE TU AGENDA ---
+        function syncAgenda() {
+            const now = new Date();
+            const path = `agenda/${now.getMonth()}-${now.getFullYear()}/d${now.getDate()}`;
+
+            db.ref('control_pagos').once('value', snap => {
+                const data = snap.val();
+                if (!data) return;
+
+                const updates = {};
+                Object.keys(data).forEach(id => {
+                    const d = data[id];
+                    if (d.status === 'PENDIENTE') {
+                        // AQUÍ ESTÁ EL AJUSTE PARA TU AGENDA:
+                        updates[`${path}/${id}`] = {
+                            txt: `PAGO ODC: ${d.nombre} ($${d.monto.toLocaleString()})`,
+                            time: "08:00",
+                            prio: "prio-alta", // Usa 'prio-alta' para activar el CSS de tu agenda
+                            status: "pendiente", //
+                            u: d.lastUser || me //
+                        };
+                    }
+                });
+                db.ref().update(updates);
+            });
+        }
 
         function subir() {
-            const nom = document.getElementById('n-orden').value;
-            const arc = document.getElementById('f-pdf').files[0];
-            const btn = document.getElementById('btn-save');
-            const now = new Date().toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-
-            if (!nom || !arc) return alert("Completa todos los campos");
-
-            btn.disabled = true;
-            btn.innerText = "SINCRONIZANDO...";
+            const n = document.getElementById('n-orden').value, m = document.getElementById('n-monto').value, f = document.getElementById('f-pdf').files[0];
+            if (!n || !m) return alert("Falta información");
 
             const reader = new FileReader();
-            reader.readAsDataURL(arc); // Convierte PDF a Base64 para evitar errores de Storage
-            reader.onload = function () {
-                db.ref('control_pagos').push({
-                    nombre: nom.toUpperCase(),
-                    pdf: reader.result, // Se guarda el PDF directo en la DB
-                    status: 'PENDIENTE',
-                    fecha: new Date().toLocaleDateString('es-MX'),
-                    lastUser: currentUser,
-                    lastDate: now
-                }).then(() => {
+            reader.readAsDataURL(f);
+            reader.onload = function() {
+                const id = db.ref('control_pagos').push().key;
+                const record = {
+                    id, nombre: n.toUpperCase(), monto: parseFloat(m), pdf: reader.result,
+                    status: 'PENDIENTE', fecha: new Date().toLocaleDateString('es-MX'), lastUser: me
+                };
+
+                db.ref('control_pagos/' + id).set(record).then(() => {
+                    syncAgenda();
                     document.getElementById('m-add').classList.add('hidden');
-                    document.getElementById('n-orden').value = "";
-                    document.getElementById('f-pdf').value = "";
-                }).finally(() => {
-                    btn.disabled = false;
-                    btn.innerText = "Guardar Orden";
+                    alert("¡Sincronizado con la Agenda en Rojo!");
                 });
             };
         }
@@ -120,62 +149,50 @@
             const list = document.getElementById('lista');
             list.innerHTML = '';
             const data = snap.val();
-            let total = 0, pends = 0, pagos = 0;
-
             if (data) {
                 Object.keys(data).reverse().forEach(id => {
                     const d = data[id];
-                    total++;
-                    d.status === 'PAGADO' ? pagos++ : pends++;
-
-                    const color = d.status === 'PAGADO' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600';
-                    
+                    const color = d.status === 'PAGADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600';
                     list.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-all">
+                        <tr class="hover:bg-slate-50">
                             <td class="p-6">
-                                <div class="font-extrabold text-slate-700 uppercase text-sm">${d.nombre}</div>
-                                <div class="text-[10px] text-slate-400 font-bold italic tracking-widest">${d.fecha}</div>
+                                <div class="font-bold text-slate-800 text-sm uppercase">${d.nombre}</div>
+                                <div class="text-[10px] text-slate-400 font-bold">${d.fecha}</div>
                             </td>
+                            <td class="p-6 text-center font-black text-slate-900">$${d.monto.toLocaleString()}</td>
                             <td class="p-6 text-center">
-                                <div class="user-tag"><i class="fas fa-id-badge"></i> ${d.lastUser || 'S/N'}</div>
-                                <div class="text-[8px] text-slate-400 mt-1 font-bold italic block">${d.lastDate || ''}</div>
+                                <button onclick="toggleStatus('${id}', '${d.status}')" class="px-5 py-2 rounded-xl text-[10px] font-black uppercase ${color}">${d.status}</button>
                             </td>
-                            <td class="p-6 text-center">
-                                <a href="${d.pdf}" download="${d.nombre}.pdf" class="text-red-500 hover:scale-125 transition-transform inline-block">
-                                    <i class="fas fa-file-pdf text-xl"></i>
-                                </a>
-                            </td>
-                            <td class="p-6 text-center">
-                                <button onclick="cambiar('${id}', '${d.status}')" class="px-5 py-2 rounded-xl text-[10px] font-black uppercase shadow-sm ${color}">
-                                    ${d.status}
-                                </button>
-                            </td>
-                            <td class="p-6 text-right">
-                                <button onclick="borrar('${id}')" class="text-slate-200 hover:text-red-500 transition-colors">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
+                            <td class="p-6 text-right flex justify-end gap-3">
+                                <a href="${d.pdf}" download="${d.nombre}.pdf" class="text-red-500"><i class="fas fa-file-pdf text-lg"></i></a>
+                                <button onclick="borrar('${id}')" class="text-slate-200 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
                             </td>
                         </tr>`;
                 });
             }
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-pend').innerText = pends;
-            document.getElementById('stat-pago').innerText = pagos;
         });
 
-        function cambiar(id, st) {
-            const nuevo = st === 'PENDIENTE' ? 'PAGADO' : 'PENDIENTE';
-            const now = new Date().toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-            db.ref('control_pagos/' + id).update({ 
-                status: nuevo,
-                lastUser: currentUser,
-                lastDate: now
+        function toggleStatus(id, st) {
+            const next = st === 'PENDIENTE' ? 'PAGADO' : 'PENDIENTE';
+            const now = new Date();
+            db.ref('control_pagos/' + id).update({ status: next }).then(() => {
+                if (next === 'PAGADO') {
+                    db.ref(`agenda/${now.getMonth()}-${now.getFullYear()}/d${now.getDate()}/${id}`).remove();
+                } else {
+                    syncAgenda();
+                }
             });
         }
 
         function borrar(id) {
-            if (confirm("¿Eliminar este registro permanentemente?")) db.ref('control_pagos/' + id).remove();
+            if (confirm("¿Borrar permanentemente?")) {
+                const now = new Date();
+                db.ref('control_pagos/' + id).remove();
+                db.ref(`agenda/${now.getMonth()}-${now.getFullYear()}/d${now.getDate()}/${id}`).remove();
+            }
         }
+
+        window.onload = () => { syncAgenda(); };
     </script>
 </body>
 </html>
