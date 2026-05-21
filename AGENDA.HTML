@@ -39,6 +39,9 @@
             </div>
         </div>
         <div class="flex flex-wrap gap-2 items-center">
+            <div class="bg-slate-100 text-slate-700 text-[11px] font-bold px-3 py-2 rounded-xl border border-slate-200 mr-2 flex items-center gap-2">
+                <i class="fas fa-user-shield text-blue-600"></i> <span id="current-session-user">ADMIN CONTROL</span>
+            </div>
             <button onclick="window.print()" class="bg-slate-50 hover:bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-xs transition-all border border-slate-200">
                 <i class="fas fa-print mr-2"></i>Exportar
             </button>
@@ -80,8 +83,20 @@
                 </div>
                 
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Técnico Asignado</label>
-                    <input type="text" id="ev-user" class="w-full bg-slate-50 p-3 rounded-xl font-semibold text-xs outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500" placeholder="Ej: Admin, Soporte">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">👨‍🔧 Técnico Asignado</label>
+                    <input type="text" id="ev-user" class="w-full bg-slate-50 p-3 rounded-xl font-semibold text-xs outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500" placeholder="Ej: Soporte, Juan">
+                </div>
+
+                <div id="info-auditoria-edicion" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-[11px] font-semibold text-slate-600 space-y-1.5 shadow-inner">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">📝 Historial de Modificación</div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fas fa-user-edit text-blue-500 w-4"></i> Modificó: 
+                        <span id="audit-user" class="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Nueva Actividad</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fas fa-calendar-alt text-slate-400 w-4"></i> Fecha: 
+                        <span id="audit-date" class="text-slate-800 font-bold">--/--/----</span>
+                    </div>
                 </div>
 
                 <div>
@@ -142,10 +157,19 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Inicializar con la fecha de hoy por defecto
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth();
         let agendaData = {};
+
+        // Se detecta el usuario que inició sesión en el index desde el localStorage
+        let managerLogged = localStorage.getItem('imp_user') || 'ADMIN';
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const displayUser = document.getElementById('current-session-user');
+            if (displayUser) {
+                displayUser.innerText = managerLogged.toUpperCase() === 'ADMIN' ? 'ADMINISTRADOR' : managerLogged.toUpperCase();
+            }
+        });
 
         function agregarFila(valor = "") {
             const container = document.getElementById('lista-container');
@@ -163,7 +187,6 @@
             document.getElementById('clock').innerText = h.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
         }, 1000);
 
-        // 🛠️ SE CONSTRUYE EL SELECTOR DE FECHAS CON EL PAR MES-AÑO CORRECTO (Rango: un año atrás y un año adelante)
         const mNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
         const mSel = document.getElementById('m-sel');
         
@@ -173,26 +196,22 @@
             const mesBase = hoy.getMonth();
             
             mSel.innerHTML = "";
-            // Genera opciones desde 12 meses atrás hasta 12 meses en el futuro
             for (let i = -12; i <= 12; i++) {
                 const fOpt = new Date(anoBase, mesBase + i, 1);
                 const valOptMes = fOpt.getMonth();
                 const valOptAno = fOpt.getFullYear();
-                
                 const esSeleccionado = (valOptMes === mesBase && valOptAno === anoBase) ? 'selected' : '';
                 mSel.innerHTML += `<option value="${valOptMes}-${valOptAno}" ${esSeleccionado}>${mNames[valOptMes]} ${valOptAno}</option>`;
             }
         }
         
-        // Ejecutar la creación dinámica del menú
         inicializarSelectorFechas();
 
-        // 🛠️ ACTUALIZA LAS VARIABLES GLOBALES DE TIEMPO CUANDO SE SELECCIONA OTRO MES/AÑO
         function cambiarFechaSelector() {
             const [mes, ano] = mSel.value.split('-');
             currentMonth = parseInt(mes);
             currentYear = parseInt(ano);
-            initDataFetch(); // Pide los datos de Firebase con la ruta del año correcto
+            initDataFetch();
         }
 
         function openModal(dayKey, eventId = null) {
@@ -200,10 +219,14 @@
             document.getElementById('ev-id').value = eventId || '';
             document.getElementById('ev-time').value = "09:00";
             document.getElementById('ev-txt').value = "";
-            document.getElementById('ev-user').value = "Admin";
+            document.getElementById('ev-user').value = "";
             document.getElementById('ev-maps').value = "";
             document.getElementById('ev-status').value = "pendiente";
             document.getElementById('lista-container').innerHTML = ""; 
+            
+            // 🛠️ CORRECCIÓN: Al abrir la tarjeta muestra los datos guardados históricamente, no los del clic actual
+            document.getElementById('audit-user').innerText = "Nueva Actividad";
+            document.getElementById('audit-date').innerText = "--/--/----";
             
             document.getElementById('btn-del-ev').style.display = eventId ? 'block' : 'none';
             document.getElementById('modal-title').innerText = eventId ? "Editar Actividad" : "Nueva Actividad";
@@ -212,11 +235,20 @@
                 const ev = agendaData[dayKey][eventId];
                 document.getElementById('ev-time').value = ev.time || "09:00";
                 document.getElementById('ev-txt').value = ev.txt || "";
-                document.getElementById('ev-user').value = ev.u || "Admin";
+                document.getElementById('ev-user').value = ev.u || "";
                 document.getElementById('ev-maps').value = ev.maps_link || "";
                 document.getElementById('ev-status').value = ev.status || "pendiente";
                 if (ev.lista_instalacion) {
                     ev.lista_instalacion.forEach(item => agregarFila(item));
+                }
+
+                // Despliega el registro real que viene de Firebase
+                if (ev.ultima_modificacion_por) {
+                    document.getElementById('audit-user').innerText = ev.ultima_modificacion_por.toUpperCase();
+                    document.getElementById('audit-date').innerText = ev.fecha_modificacion || 'No disponible';
+                } else {
+                    document.getElementById('audit-user').innerText = "SISTEMA (ORIGINAL)";
+                    document.getElementById('audit-date').innerText = "Pre-registro";
                 }
             }
             document.getElementById('m-cal').classList.remove('hidden');
@@ -231,14 +263,27 @@
             const inputs = document.querySelectorAll('#lista-container input');
             const lista = Array.from(inputs).map(i => i.value).filter(v => v !== "");
             
+            // 🕒 AQUÍ ES DONDE SE CONFIGURA EL TIEMPO: Justo en el segundo exacto en que presionan "Guardar Cambios"
+            const horaLocalModificacion = new Date().toLocaleString('es-MX', { 
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            // Captura el usuario que ejecutó la acción de guardado
+            const usuarioAccion = (localStorage.getItem('imp_user') || 'ADMIN').toUpperCase();
+            const usuarioFormateado = usuarioAccion === 'ADMIN' ? 'ADMINISTRADOR' : usuarioAccion;
+
             const eventData = {
                 time: document.getElementById('ev-time').value,
                 prio: document.getElementById('ev-prio').value,
                 txt: document.getElementById('ev-txt').value,
-                u: document.getElementById('ev-user').value || 'Admin',
+                u: document.getElementById('ev-user').value || 'Sin Especificar',
                 maps_link: document.getElementById('ev-maps').value,
                 status: document.getElementById('ev-status').value,
-                lista_instalacion: lista
+                lista_instalacion: lista,
+                // Estampa definitiva en base de datos al guardar
+                ultima_modificacion_por: usuarioFormateado,
+                fecha_modificacion: horaLocalModificacion
             };
 
             if (agendaData[dayKey] && agendaData[dayKey][id]) {
@@ -292,12 +337,25 @@
                 `;
             }
 
+            let trackingCambiosHtml = "";
+            if (ev.ultima_modificacion_por) {
+                trackingCambiosHtml = `
+                    <div class="col-span-2 md:col-span-4 bg-blue-50 p-4 rounded-xl flex justify-between items-center border border-blue-100 font-semibold shadow-sm text-slate-600 text-[11px]">
+                        <span><i class="fas fa-history mr-1 text-blue-500"></i> Última modificación por: <strong class="text-blue-700">${ev.ultima_modificacion_por}</strong></span>
+                        <span>Fecha y Hora: <strong class="text-slate-700">${ev.fecha_modificacion || 'No disponible'}</strong></span>
+                    </div>
+                `;
+            }
+
             document.getElementById('rep-contenido-dinamico').innerHTML = `
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-5 rounded-2xl text-[12px] border border-slate-100">
-                    <div><span class="text-slate-400 block font-bold text-[10px] uppercase">👨‍🔧 Técnico</span><strong class="text-slate-800 text-sm">${ev.u ? ev.u.toUpperCase() : 'ADMIN'}</strong></div>
+                    <div><span class="text-slate-400 block font-bold text-[10px] uppercase">👨‍🔧 Técnico Asignado</span><strong class="text-slate-800 text-sm">${ev.u ? ev.u.toUpperCase() : 'SIN ASIGNAR'}</strong></div>
                     <div><span class="text-slate-400 block font-bold text-[10px] uppercase">⏰ Hora Entrada</span><strong class="text-slate-800 text-sm">${ev.hora_llegada || '--'}</strong></div>
                     <div><span class="text-slate-400 block font-bold text-[10px] uppercase">⏰ Hora Salida</span><strong class="text-slate-800 text-sm">${ev.hora_salida || '--'}</strong></div>
                     <div><span class="text-slate-400 block font-bold text-[10px] uppercase">📍 Coordenadas GPS</span><strong class="text-blue-600 font-mono">${ev.gps_llegada || 'No disp.'}</strong></div>
+                    
+                    ${trackingCambiosHtml}
+
                     <div class="col-span-2 md:col-span-4 mt-2 pt-3 border-t border-slate-200">
                         <span class="text-slate-400 block font-bold text-[10px] uppercase mb-1">📦 Material / Insumos Entregados:</span>
                         <ul class="space-y-1 font-semibold text-slate-700">${listaHtml || '<li class="italic text-slate-400 font-normal">Sin materiales registrados.</li>'}</ul>
@@ -342,7 +400,6 @@
             const userFilter = document.getElementById('user-filter').value;
             container.innerHTML = "";
 
-            // 🛠️ USA EL MES Y AÑO CORRECTOS SELECCIONADOS PARA CONSTRUIR LOS DÍAS DEL CALENDARIO
             const primerDiaIndex = new Date(currentYear, currentMonth, 1).getDay();
             const totalDias = new Date(currentYear, currentMonth + 1, 0).getDate();
 
@@ -370,10 +427,8 @@
         }
 
         function initDataFetch() {
-            // Eliminar el listener activo anterior del mes anterior para que no choque la RAM del navegador
             db.ref().child('agenda').off();
             
-            // 🛠️ CONSULTA DIRECTA A LA RUTA DINÁMICA DE MES Y AÑO SELECCIONADO
             db.ref(`agenda/${currentMonth}-${currentYear}`).on('value', (snapshot) => {
                 agendaData = snapshot.val() || {};
                 const users = new Set(["todos"]);
@@ -386,7 +441,6 @@
             });
         }
 
-        // Carga inicial al abrir la página
         initDataFetch();
     </script>
 </body>
